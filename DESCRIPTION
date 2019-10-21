@@ -1,0 +1,25 @@
+Package: CellAnnotatoR
+Title: Automated marker-based cell type annotation
+Version: 0.0.0.9000
+Authors@R: person("Viktor", "Petukhov", email = "viktor.s.petuhov@ya.ru", role = c("aut", "cre"))
+Description: Automated marker-based cell type annotation
+Depends: R (>= 3.5.3)
+License: What license is it under?
+Encoding: UTF-8
+LazyData: true
+Imports:
+    conos (>= 1.1.2),
+    garnett (>= 0.1.13),
+    dplyr,
+    ggplot2,
+    igraph,
+    Matrix,
+    tibble,
+    magrittr
+Suggests:
+    ggtree (>= 1.99.1)
+Remotes: 
+    hms-dbmi/conos,
+    cole-trapnell-lab/garnett,
+    YuLab-SMU/ggtree
+RoxygenNote: 6.1.1
