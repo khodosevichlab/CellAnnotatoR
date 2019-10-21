@@ -3,7 +3,7 @@ Automated marker-based annotation of cell types
 
 ## Installation
 
-This package use [Garnett](https://cole-trapnell-lab.github.io/garnett/docs/) format of marker gene markup files and 
+This package uses [Garnett](https://cole-trapnell-lab.github.io/garnett/docs/) format of marker gene markup files and 
 [Conos](https://github.com/hms-dbmi/conos) label propagaton, so you need to install these packages as dependencies:
 
 ```r
@@ -18,7 +18,7 @@ devtools::install_github("cole-trapnell-lab/garnett")
 devtools::install_github("hms-dbmi/conos")
 ```
 
-Next, install the package:
+Next, install CellAnnotatoR:
 
 ```r
 devtools::install_github("khodosevichlab/CellAnnotatoR")

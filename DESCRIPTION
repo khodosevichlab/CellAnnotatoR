@@ -3,7 +3,7 @@ Title: Automated marker-based cell type annotation
 Version: 0.0.0.9000
 Authors@R: person("Viktor", "Petukhov", email = "viktor.s.petuhov@ya.ru", role = c("aut", "cre"))
 Description: Automated marker-based cell type annotation
-Depends: R (>= 3.5.3)
+Depends: R (>= 3.5.1)
 License: What license is it under?
 Encoding: UTF-8
 LazyData: true
