@@ -1,7 +1,14 @@
 #' @importFrom magrittr %<>% %$% %>%
+NULL
 
+#' Run diffusion on subgraph for the specified subtype
+#'
+#' @param fading fading level for graph diffusion
+#' @param fading.const constant in exponent for graph diffusion
+#' @param verbose print progress bar
+#' @param tol tolerance for diffusion stopping
 diffuseSubgraph <- function(graph, annotation, subtype, scores, fading=10, fading.const=0.5,
-                            clusters=NULL, verbose=FALSE) {
+                            clusters=NULL, verbose=FALSE, max.iters=1000, tol=1e-3) {
   cbs <- names(annotation)[annotation == subtype]
   if (length(cbs) == 0)
     return(NULL)
@@ -14,9 +21,9 @@ diffuseSubgraph <- function(graph, annotation, subtype, scores, fading=10, fadin
 
   edges <- igraph::as_edgelist(subgraph)
   edge.weights <- igraph::edge.attributes(subgraph)$weight
-  res <- conos:::smooth_count_matrix(edges, edge.weights, scores, max_n_iters=1000,
+  res <- conos:::smooth_count_matrix(edges, edge.weights, scores, max_n_iters=max.iters,
                                      diffusion_fading=fading, diffusion_fading_const=fading.const,
-                                     verbose=verbose, normalize=T)
+                                     verbose=verbose, tol=tol, normalize=T)
 
   if (is.null(clusters)) {
     ann.update <- colnames(res)[apply(res, 1, which.max)] %>% setNames(rownames(res))
@@ -31,6 +38,14 @@ diffuseSubgraph <- function(graph, annotation, subtype, scores, fading=10, fadin
   return(list(annotation=annotation, scores=res))
 }
 
+#' Assign cell types for each cell based on type scores. Optionally uses `clusters` to expand annotation.
+#'
+#' @param graph cell graph from Seurat, Pagoda2 or some other tool
+#' @param scores cell type scores from `getMarkerScoresPerCellType` function
+#' @param classification.tree cell type hierarchy from classification data (see `getClassificationData`)
+#' @param clusters cluster assignment of data. Used to expand annotation on these clusters.
+#' @inheritDotParams diffuseSubgraph fading fading.const verbose tol
+#'
 #' @export
 assignCellsByScores <- function(graph, scores, classification.tree, clusters=NULL, ...) {
   if (!is.null(clusters)) {
@@ -108,6 +123,17 @@ getCellTypeScore <- function(markers, tf.idf, aggr=T, do.multiply=T) {
   return(scores * score.mult)
 }
 
+#' Return initial scores of each cell type for each cell
+#'
+#' @param clf classification data from `getClassificationData`
+#' @param aggr should individual gene scores be aggregated per cell type? If `FALSE`,
+#' returns list of data.frames, showing scores of each gene for each cell.
+#' Useful for debugging list of markers.
+#'
+#' @return data.frame with rows corresponding to cells and columns corresponding to cell types.
+#' Values are cell type scores, normalized per level of hierarchy
+#'
+#' @export
 getMarkerScoresPerCellType <- function(clf, aggr=T) {
   res <- lapply(clf$marker.list, getCellTypeScore, clf$cm, aggr=aggr)
 
@@ -153,9 +179,10 @@ classificationTreeToDf <- function(classification.tree) {
     }) %>%  Reduce(rbind, .)
 }
 
-getAllSubtypes <- function(parent.type, classification.tree) {
-  igraph::dfs(classification.tree, parent.type, neimode="out", unreachable=F)$order %>%
-    names() %>% .[!is.na(.)] %>% .[. != parent.type]
+getAllSubtypes <- function(parent.type, classification.tree, max.depth=NULL) {
+  paths <- igraph::dfs(classification.tree, parent.type, neimode="out", unreachable=F, dist=T)
+  paths <- if (!is.null(max.depth)) names(which(paths$dist <= max.depth)) else names(paths$order)
+  return(paths %>% .[!is.na(.)] %>% .[. != parent.type])
 }
 
 ## Validation

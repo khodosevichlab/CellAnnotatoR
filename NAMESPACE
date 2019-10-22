@@ -2,8 +2,10 @@
 
 export(assignCellsByScores)
 export(getClassificationData)
+export(getMarkerScoresPerCellType)
 export(mergeAnnotationToLevel)
 export(plotAnnotationByLevels)
+export(plotAssignmentScores)
 export(plotSubtypeMarkers)
 export(plotTypeHierarchy)
 export(plotTypeMarkers)

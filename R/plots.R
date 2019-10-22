@@ -1,3 +1,4 @@
+#' @export
 plotAssignmentScores <- function(parent.node, scores, classification.tree, embedding, ...) {
   classificationTreeToDf(classification.tree) %>%
     dplyr::filter(Parent == parent.node) %>% .$Node %>%
@@ -33,10 +34,10 @@ plotTypeMarkers <- function(parse.list, cell.type, embedding, count.matrix, show
 }
 
 #' @export
-plotSubtypeMarkers <- function(parent.type, embedding, count.matrix, parse.list, classification.tree, show.legend=F, drop.missing=T, ...) {
+plotSubtypeMarkers <- function(parent.type, embedding, count.matrix, parse.list, classification.tree, show.legend=F, max.depth=NULL, drop.missing=T, ...) {
   markers <- list()
 
-  for (type in getAllSubtypes(parent.type, classification.tree)) {
+  for (type in getAllSubtypes(parent.type, classification.tree, max.depth=max.depth)) {
     for (g in parse.list[[type]]@expressed) {
       markers[[g]] %<>% c(paste0(type, "+"))
     }
