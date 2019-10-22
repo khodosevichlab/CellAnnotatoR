@@ -9,3 +9,5 @@
 *.pdf
 *.bin
 *.rds
+inst/doc
+data

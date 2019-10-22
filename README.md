@@ -40,3 +40,5 @@ ann_by_level <- assignCellsByScores(graph, marker_scores, clf_data$classificatio
 
 plotAnnotationByLevels(emb, ann_by_level$annotation, clusters=clusters, size=0.2, font.size=c(2, 4), shuffle.colors=T)
 ```
+
+See the [vignette](vignettes/seurat_pbmc3k.md) for a Seurat example.
