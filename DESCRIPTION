@@ -15,11 +15,15 @@ Imports:
     igraph,
     Matrix,
     tibble,
-    magrittr
+    magrittr,
+    cowplot
 Suggests:
-    ggtree (>= 1.99.1)
+    ggtree (>= 1.99.1),
+    knitr,
+    rmarkdown
 Remotes: 
     hms-dbmi/conos,
     cole-trapnell-lab/garnett,
     YuLab-SMU/ggtree
 RoxygenNote: 6.1.1
+VignetteBuilder: knitr

@@ -41,18 +41,28 @@ diffuseSubgraph <- function(graph, annotation, subtype, scores, fading=10, fadin
 #' Assign cell types for each cell based on type scores. Optionally uses `clusters` to expand annotation.
 #'
 #' @param graph cell graph from Seurat, Pagoda2 or some other tool
-#' @param scores cell type scores from `getMarkerScoresPerCellType` function
+#' @param scores cell type scores from `getMarkerScoresPerCellType` function. Re-estimated if NULL
 #' @param classification.tree cell type hierarchy from classification data (see `getClassificationData`)
 #' @param clusters cluster assignment of data. Used to expand annotation on these clusters.
 #' @inheritDotParams diffuseSubgraph fading fading.const verbose tol
 #'
 #' @export
-assignCellsByScores <- function(graph, scores, classification.tree, clusters=NULL, ...) {
+assignCellsByScores <- function(graph, clf.data, scores=NULL, clusters=NULL, ...) {
   if (!is.null(clusters)) {
     clusters <- as.factor(clusters)
   }
 
-  paths <- classificationTreeToDf(classification.tree) %$% split(., PathLen) %>%
+  if (is.null(scores)) {
+    scores <- getMarkerScoresPerCellType(clf.data)
+  }
+
+  if ((is(graph, "Matrix") || is(graph, "matrix")) && ncol(graph) == nrow(graph)) {
+    graph <- igraph::graph_from_adjacency_matrix(graph, weighted=T)
+  } else if (!is(graph, "igraph")) {
+    stop("Unknown graph format. Only adjacency matrix or igraph are supported")
+  }
+
+  paths <- classificationTreeToDf(clf.data$classification.tree) %$% split(., PathLen) %>%
     lapply(function(df) split(df$Node, df$Parent)) %>% .[order(names(.))]
 
   c.ann <- rep("root", length(igraph::V(graph))) %>% setNames(names(igraph::V(graph)))

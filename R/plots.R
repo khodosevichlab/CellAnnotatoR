@@ -20,30 +20,31 @@ plotGarnettAssignemnts <- function(embedding, assignment, plot.ambig=T, show.leg
 }
 
 #' @export
-plotTypeMarkers <- function(parse.list, cell.type, embedding, count.matrix, show.legend=T, ...) {
+plotTypeMarkers <- function(marker.list, cell.type, embedding, count.matrix, show.legend=T, ...) {
   plot.func <- function(gene, title) {
     conos:::embeddingPlot(embedding, colors=count.matrix[,gene], show.legend=show.legend, title=title, ...)
   }
 
-  res <- parse.list[[cell.type]]@expressed %>% intersect(colnames(count.matrix)) %>%
+  res <- marker.list[[cell.type]]@expressed %>% intersect(colnames(count.matrix)) %>%
     lapply(function(g) plot.func(g, paste0(g, "+"))) %>%
-    c(parse.list[[cell.type]]@not_expressed %>% intersect(colnames(count.matrix)) %>%
+    c(marker.list[[cell.type]]@not_expressed %>% intersect(colnames(count.matrix)) %>%
         lapply(function(g) plot.func(g, paste0(g, "-"))))
 
   return(res)
 }
 
 #' @export
-plotSubtypeMarkers <- function(parent.type, embedding, count.matrix, parse.list, classification.tree, show.legend=F, max.depth=NULL, drop.missing=T, ...) {
+plotSubtypeMarkers <- function(parent.type, embedding, count.matrix, clf.data,
+                               show.legend=F, max.depth=NULL, drop.missing=T, build.panel=T, n.col=NULL, n.row=NULL, ...) {
   markers <- list()
 
-  for (type in getAllSubtypes(parent.type, classification.tree, max.depth=max.depth)) {
-    for (g in parse.list[[type]]@expressed) {
-      markers[[g]] %<>% c(paste0(type, "+"))
+  for (type in getAllSubtypes(parent.type, clf.data$classification.tree, max.depth=max.depth)) {
+    for (g in clf.data$marker.list[[type]]@expressed) {
+      markers[[g]] %<>% c(paste0(type, "(+)"))
     }
 
-    for (g in parse.list[[type]]@not_expressed) {
-      markers[[g]] %<>% c(paste0(type, "-"))
+    for (g in clf.data$marker.list[[type]]@not_expressed) {
+      markers[[g]] %<>% c(paste0(type, "(-)"))
     }
   }
 
@@ -52,11 +53,16 @@ plotSubtypeMarkers <- function(parent.type, embedding, count.matrix, parse.list,
   }
 
   titles <- mapply(function(n,ts) paste0(n, ": ", ts), names(markers), lapply(markers, paste, collapse=", "))
-  mapply(function(gene, title) {
+  plots <- mapply(function(gene, title) {
     expr.vec <- if (gene %in% colnames(count.matrix)) count.matrix[,gene] else NA
     conos:::embeddingPlot(embedding, colors=expr.vec, show.legend=show.legend, title=title, ...)
   },names(markers), titles, SIMPLIFY=F
   )
+
+  if (!build.panel)
+    return(plots)
+
+  return(cowplot::plot_grid(plotlist=plots, ncol=n.col, nrow=n.row))
 }
 
 #' @export
