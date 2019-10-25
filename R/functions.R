@@ -1,29 +1,45 @@
 #' @importFrom magrittr %<>% %$% %>%
 NULL
 
-#' Run diffusion on subgraph for the specified subtype
+plapply <- function(..., n.cores=1, verbose=F) {
+  if (verbose)
+    return(pbapply::pblapply(..., cl=n.cores))
+
+  if (n.cores == 1)
+    return(lapply(...))
+
+  return(parallel::mclapply(..., mc.cores=n.cores))
+}
+
+#' Run diffusion on graph
 #'
 #' @param fading fading level for graph diffusion
 #' @param fading.const constant in exponent for graph diffusion
 #' @param verbose print progress bar
 #' @param tol tolerance for diffusion stopping
-diffuseSubgraph <- function(graph, annotation, subtype, scores, fading=10, fading.const=0.5,
-                            clusters=NULL, verbose=FALSE, max.iters=1000, tol=1e-3) {
-  cbs <- names(annotation)[annotation == subtype]
+diffuseGraph <- function(graph, scores, fading=10, fading.const=0.5,
+                         clusters=NULL, verbose=FALSE, max.iters=1000, tol=1e-3) {
+  cbs <- igraph::V(graph)$name
   if (length(cbs) == 0)
     return(NULL)
-
-  subgraph <- igraph::induced_subgraph(graph, cbs)
 
   scores <- as.matrix(scores[cbs, ])
   scores[rowSums(scores) < 1e-5, ] <- 1
   scores %<>% `/`(rowSums(.))
 
-  edges <- igraph::as_edgelist(subgraph)
-  edge.weights <- igraph::edge.attributes(subgraph)$weight
-  res <- conos:::smooth_count_matrix(edges, edge.weights, scores, max_n_iters=max.iters,
-                                     diffusion_fading=fading, diffusion_fading_const=fading.const,
-                                     verbose=verbose, tol=tol, normalize=T)
+  if (any(is.na(scores)))
+    stop("NAs in scores")
+
+  edges <- igraph::as_edgelist(graph)
+
+  if (nrow(edges) > 0) {
+    edge.weights <- igraph::edge.attributes(graph)$weight
+    res <- conos:::smooth_count_matrix(edges, edge.weights, scores, max_n_iters=max.iters,
+                                       diffusion_fading=fading, diffusion_fading_const=fading.const,
+                                       verbose=verbose, tol=tol, normalize=T)
+  } else {
+    res <- scores
+  }
 
   if (is.null(clusters)) {
     ann.update <- colnames(res)[apply(res, 1, which.max)] %>% setNames(rownames(res))
@@ -34,8 +50,7 @@ diffuseSubgraph <- function(graph, annotation, subtype, scores, fading=10, fadin
       .[clusters] %>% setNames(names(clusters))
   }
 
-  annotation[names(ann.update)] <- ann.update
-  return(list(annotation=annotation, scores=res))
+  return(list(annotation=ann.update, scores=res))
 }
 
 #' Assign cell types for each cell based on type scores. Optionally uses `clusters` to expand annotation.
@@ -44,10 +59,11 @@ diffuseSubgraph <- function(graph, annotation, subtype, scores, fading=10, fadin
 #' @param scores cell type scores from `getMarkerScoresPerCellType` function. Re-estimated if NULL
 #' @param classification.tree cell type hierarchy from classification data (see `getClassificationData`)
 #' @param clusters cluster assignment of data. Used to expand annotation on these clusters.
+#' @param verbose verbosity level (from 0 to 2)
 #' @inheritDotParams diffuseSubgraph fading fading.const verbose tol
 #'
 #' @export
-assignCellsByScores <- function(graph, clf.data, scores=NULL, clusters=NULL, ...) {
+assignCellsByScores <- function(graph, clf.data, scores=NULL, clusters=NULL, verbose=0, n.cores=1, ...) {
   if (!is.null(clusters)) {
     clusters <- as.factor(clusters)
   }
@@ -72,22 +88,26 @@ assignCellsByScores <- function(graph, clf.data, scores=NULL, clusters=NULL, ...
 
   possible.ann.levels <- c()
   for (pl in 1:length(paths)) {
+    if (verbose > 0) message("Level ", pl, "...")
+
     c.path <- paths[[pl]]
     possible.ann.levels %<>% c(unlist(c.path)) %>% unique()
+    res <- plapply(names(c.path), function(p) {
+      c.cbs <- names(c.ann)[c.ann == p]
+      diffuseGraph(igraph::induced_subgraph(graph, c.cbs), scores=scores[c.cbs, c.path[[p]]],
+                      clusters=clusters, verbose=(verbose > 1), ...)
+    }, verbose=(verbose > 0), n.cores=n.cores) %>% .[!sapply(., is.null)]
 
-    for (p in names(c.path)) {
-      res <- diffuseSubgraph(graph, c.ann, p, scores[, c.path[[p]]], clusters=clusters, ...)
-      if (is.null(res))
-        next
-
-      cur.type.cbs <- names(c.ann)[c.ann == p]
-      scores.posterior[cur.type.cbs, colnames(res$scores)] <- res$scores[cur.type.cbs,]
-      c.ann <- res$annotation
+    res.ann <- lapply(res, `[[`, "annotation") %>% Reduce(c, .)
+    c.ann[names(res.ann)] <- res.ann
+    for (cr in res) {
+      scores.posterior[rownames(cr$scores), colnames(cr$scores)]
     }
 
     level.name <- paste0("l", pl)
     ann.by.level[[level.name]] <- c.ann
     scores.by.level[[level.name]] <- scores.posterior[,possible.ann.levels]
+    if (verbose > 0) message("Done")
   }
 
   return(list(annotation=ann.by.level, scores=scores.by.level))
