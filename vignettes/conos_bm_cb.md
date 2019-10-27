@@ -83,7 +83,7 @@ con$embedGraph(method="UMAP", min.dist=1, spread=2, n.cores=30)
 con$plotGraph(size=0.2)
 ```
 
-![](/tmp/RtmpCu4wDQ/preview-b8472d73ad0d.dir/conos_bm_cb_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
+![](conos_bm_cb_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
 
 Prepare data for annotation:
 
@@ -109,7 +109,7 @@ all_annotations <- lapply(ann_by_dataset, function(an) an$annotation$l1) %>% Red
 con$plotGraph(groups=all_annotations, size=0.2, plot.na=F)
 ```
 
-![](/tmp/RtmpCu4wDQ/preview-b8472d73ad0d.dir/conos_bm_cb_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
+![](conos_bm_cb_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
 
 We can see that running annotation on individual samples doesn’t
 neccesserily guarantee smoothness of labeling on the joint graph, as
@@ -122,7 +122,7 @@ ann_by_level <- assignCellsByScores(con$graph, scores=all_scores, clf.data=clf_d
 con$plotGraph(groups=ann_by_level$annotation$l1, size=0.2, plot.na=F)
 ```
 
-![](/tmp/RtmpCu4wDQ/preview-b8472d73ad0d.dir/conos_bm_cb_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
+![](conos_bm_cb_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
 
 To further deal with noise, we can use clustering information:
 
@@ -133,7 +133,7 @@ annotation <- assignCellsByScores(con$graph, scores=all_scores, clf.data=clf_dat
 con$plotGraph(groups=annotation, size=0.2)
 ```
 
-![](/tmp/RtmpCu4wDQ/preview-b8472d73ad0d.dir/conos_bm_cb_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
+![](conos_bm_cb_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
 
 ``` r
 # con$plotGraph(groups=clusters, size=0.2, shuffle.colors=T)
@@ -151,7 +151,7 @@ clusters_inc <- findSubcommunities(con, target_clusters, groups=clusters)
 con$plotGraph(groups=clusters_inc, size=0.2, shuffle.colors=T)
 ```
 
-![](/tmp/RtmpCu4wDQ/preview-b8472d73ad0d.dir/conos_bm_cb_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
+![](conos_bm_cb_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
 
 And now we can re-run
 annotation:
@@ -162,4 +162,4 @@ annotation <- assignCellsByScores(con$graph, scores=all_scores, clf.data=clf_dat
 con$plotGraph(groups=annotation, size=0.2)
 ```
 
-![](/tmp/RtmpCu4wDQ/preview-b8472d73ad0d.dir/conos_bm_cb_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
+![](conos_bm_cb_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
