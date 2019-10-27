@@ -11,13 +11,23 @@ plapply <- function(..., n.cores=1, verbose=F) {
   return(parallel::mclapply(..., mc.cores=n.cores))
 }
 
+expandAnnotationToClusters <- function(scores, clusters) {
+  clusters <- droplevels(clusters[rownames(scores)])
+  ann.update <- clusters %>% split(names(.), .) %>%
+    sapply(function(cbs) colSums(scores[cbs, ,drop=F]) %>% which.max() %>% names()) %>%
+    .[clusters] %>% setNames(names(clusters))
+
+  return(ann.update)
+}
+
 #' Run diffusion on graph
 #'
 #' @param fading fading level for graph diffusion
 #' @param fading.const constant in exponent for graph diffusion
+#' @param score.fixing.threshold threshold for a label to be considered true
 #' @param verbose print progress bar
 #' @param tol tolerance for diffusion stopping
-diffuseGraph <- function(graph, scores, fading=10, fading.const=0.5,
+diffuseGraph <- function(graph, scores, fading=10, fading.const=0.5, score.fixing.threshold=0.8,
                          clusters=NULL, verbose=FALSE, max.iters=1000, tol=1e-3) {
   cbs <- igraph::V(graph)$name
   if (length(cbs) == 0)
@@ -32,11 +42,14 @@ diffuseGraph <- function(graph, scores, fading=10, fading.const=0.5,
 
   edges <- igraph::as_edgelist(graph)
 
+  is.fixed <- rep(F, nrow(scores))
+  is.fixed[apply(scores, 2, max) > score.fixing.threshold] <- T
+
   if (nrow(edges) > 0) {
     edge.weights <- igraph::edge.attributes(graph)$weight
-    res <- conos:::smooth_count_matrix(edges, edge.weights, scores, max_n_iters=max.iters,
-                                       diffusion_fading=fading, diffusion_fading_const=fading.const,
-                                       verbose=verbose, tol=tol, normalize=T)
+    res <- conos:::smoothMatrixOnGraph(edges, edge.weights, scores, is.label.fixed=is.fixed, max_n_iters=max.iters,
+                                       diffusion_fading=fading, diffusion_fading_const=fading.const, verbose=verbose,
+                                       tol=tol, normalize=T)
   } else {
     res <- scores
   }
@@ -44,10 +57,7 @@ diffuseGraph <- function(graph, scores, fading=10, fading.const=0.5,
   if (is.null(clusters)) {
     ann.update <- colnames(res)[apply(res, 1, which.max)] %>% setNames(rownames(res))
   } else {
-    clusters <- droplevels(clusters[rownames(res)])
-    ann.update <- clusters %>% split(names(.), .) %>%
-      sapply(function(cbs) colSums(res[cbs, ,drop=F]) %>% which.max() %>% names()) %>%
-      .[clusters] %>% setNames(names(clusters))
+    ann.update <- expandAnnotationToClusters(res, clusters)
   }
 
   return(list(annotation=ann.update, scores=res))
@@ -60,7 +70,7 @@ diffuseGraph <- function(graph, scores, fading=10, fading.const=0.5,
 #' @param classification.tree cell type hierarchy from classification data (see `getClassificationData`)
 #' @param clusters cluster assignment of data. Used to expand annotation on these clusters.
 #' @param verbose verbosity level (from 0 to 2)
-#' @inheritDotParams diffuseSubgraph fading fading.const verbose tol
+#' @inheritDotParams diffuseGraph fading fading.const verbose tol score.fixing.threshold
 #'
 #' @export
 assignCellsByScores <- function(graph, clf.data, scores=NULL, clusters=NULL, verbose=0, n.cores=1, ...) {
