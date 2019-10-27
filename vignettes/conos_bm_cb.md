@@ -61,23 +61,23 @@ con$embedGraph(method="UMAP", min.dist=1, spread=2, n.cores=30)
 #> Convert graph to adjacency list...
 #> Done
 #> Estimate nearest neighbors and commute times...
-#> Estimating hitting distances: 16:56:37.
+#> Estimating hitting distances: 17:17:16.
 #> Done.
-#> Estimating commute distances: 16:56:39.
-#> Hashing adjacency list: 16:56:39.
+#> Estimating commute distances: 17:17:18.
+#> Hashing adjacency list: 17:17:18.
 #> Done.
-#> Estimating distances: 16:56:40.
+#> Estimating distances: 17:17:19.
 #> Done
 #> Done.
-#> All done!: 16:56:42.
+#> All done!: 17:17:20.
 #> Done
 #> Estimate UMAP embedding...
-#> 16:56:42 UMAP embedding parameters a = 0.09172 b = 1.334
-#> 16:56:42 Read 12000 rows and found 1 numeric columns
-#> 16:56:42 Commencing smooth kNN distance calibration using 30 threads
-#> 16:56:43 Initializing from normalized Laplacian + noise
-#> 16:56:44 Commencing optimization for 1000 epochs, with 321024 positive edges using 30 threads
-#> 16:56:51 Optimization finished
+#> 17:17:20 UMAP embedding parameters a = 0.09172 b = 1.334
+#> 17:17:20 Read 12000 rows and found 1 numeric columns
+#> 17:17:21 Commencing smooth kNN distance calibration using 30 threads
+#> 17:17:21 Initializing from normalized Laplacian + noise
+#> 17:17:22 Commencing optimization for 1000 epochs, with 321056 positive edges using 30 threads
+#> 17:17:29 Optimization finished
 #> Done
 
 con$plotGraph(size=0.2)
@@ -118,7 +118,7 @@ annotation on the whole graph:
 
 ``` r
 all_scores <- Reduce(rbind, marker_scores)
-ann_by_level <- assignCellsByScores(con$graph, scores=all_scores, clf.data=clf_datas[[1]], score.fixing.threshold=0.99)
+ann_by_level <- assignCellsByScores(con$graph, scores=all_scores, clf.data=clf_datas[[1]])
 con$plotGraph(groups=ann_by_level$annotation$l1, size=0.2, plot.na=F)
 ```
 
@@ -147,7 +147,7 @@ resolution:
 ``` r
 target_clusters <- clusters[names(annotation)[annotation %in% c("Progenitors", "Plasma")]] %>% 
   as.character() %>% unique()
-clusters_inc <- findSubcommunities(con, target_clusters, groups=clusters)
+clusters_inc <- findSubcommunities(con, target_clusters, groups=clusters, resolution=2)
 con$plotGraph(groups=clusters_inc, size=0.2, shuffle.colors=T)
 ```
 

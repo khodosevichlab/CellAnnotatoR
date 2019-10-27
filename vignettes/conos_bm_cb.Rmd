@@ -82,7 +82,7 @@ as such approach can't utilize joint structure. To deal with it we can run annot
 
 ```{r}
 all_scores <- Reduce(rbind, marker_scores)
-ann_by_level <- assignCellsByScores(con$graph, scores=all_scores, clf.data=clf_datas[[1]], score.fixing.threshold=0.99)
+ann_by_level <- assignCellsByScores(con$graph, scores=all_scores, clf.data=clf_datas[[1]])
 con$plotGraph(groups=ann_by_level$annotation$l1, size=0.2, plot.na=F)
 ```
 
@@ -101,7 +101,7 @@ In the current example, clustering resolution is too low to separate all subpopu
 ```{r}
 target_clusters <- clusters[names(annotation)[annotation %in% c("Progenitors", "Plasma")]] %>% 
   as.character() %>% unique()
-clusters_inc <- findSubcommunities(con, target_clusters, groups=clusters)
+clusters_inc <- findSubcommunities(con, target_clusters, groups=clusters, resolution=2)
 con$plotGraph(groups=clusters_inc, size=0.2, shuffle.colors=T)
 ```
 

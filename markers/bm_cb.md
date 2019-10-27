@@ -35,10 +35,6 @@ not expressed: IL7R
 # >ERP/early
 # expressed: APOC1, PCAT18
 
->Lymphoid
-expressed: FABP5
-not expressed: HPGDS, SPINK2
-
 >Progenitors
 expressed: AVP, HPGDS, SPINK2
 not expressed: PPBP
