@@ -42,8 +42,7 @@ diffuseGraph <- function(graph, scores, fading=10, fading.const=0.5, score.fixin
 
   edges <- igraph::as_edgelist(graph)
 
-  is.fixed <- rep(F, nrow(scores))
-  is.fixed[apply(scores, 2, max) > score.fixing.threshold] <- T
+  is.fixed <- (apply(scores, 1, max) > score.fixing.threshold)
 
   if (nrow(edges) > 0) {
     edge.weights <- igraph::edge.attributes(graph)$weight
