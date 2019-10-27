@@ -34,9 +34,7 @@ Examples of graphs are: [Seurat](https://github.com/satijalab/seurat/wiki/Seurat
 
 ```r
 clf_data <- getClassificationData(cm, marker_path, data.gene.id.type="SYMBOL", marker.gene.id.type="SYMBOL")
-
-marker_scores <- getMarkerScoresPerCellType(clf_data)
-ann_by_level <- assignCellsByScores(graph, marker_scores, clf_data$classification.tree, clusters=clusters)
+ann_by_level <- assignCellsByScores(graph, clf_data, clusters=clusters)
 
 plotAnnotationByLevels(emb, ann_by_level$annotation, clusters=clusters, size=0.2, font.size=c(2, 4), shuffle.colors=T)
 ```
