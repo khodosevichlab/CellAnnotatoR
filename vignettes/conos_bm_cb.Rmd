@@ -1,0 +1,114 @@
+---
+title: "Annotation of BM+CB data across multiple datasets with Conos"
+output: rmarkdown::github_document
+vignette: >
+  %\VignetteIndexEntry{Annotation of BM+CB data across multiple datasets with Conos}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+This vignette shows annotation of BM+CB dataset from the [Conos tutorial](https://github.com/hms-dbmi/conos/blob/master/vignettes/walkthrough.md) across multiple samples
+
+```{r setup, message=FALSE, warning=FALSE}
+library(CellAnnotatoR)
+library(conos)
+library(pagoda2)
+library(dplyr)
+library(ggplot2)
+library(pbapply)
+
+theme_set(theme_bw())
+```
+
+## Pre-processing
+
+Let's load and pre-process data:
+
+```{r, message=FALSE, warning=FALSE}
+panel <- readRDS(file.path(find.package('conos'),'extdata','panel.rds'))
+panel_preprocessed <- lapply(panel, basicP2proc, n.cores=4, min.cells.per.gene=0, 
+                             n.odgenes=2e3, get.largevis=FALSE, make.geneknn=FALSE)
+```
+
+```{r}
+cellannot <- read.table(file.path(find.package('conos'),'extdata','cellannot.txt'),header=F,sep='\t')
+cellannot <- setNames(cellannot[,2], cellannot[,1])
+```
+
+Now we can integrate it with Conos:
+
+```{r}
+con <- Conos$new(panel_preprocessed, n.cores=4)
+con$buildGraph()
+con$findCommunities(method=conos::leiden.community, resolution=5)
+con$embedGraph(method="UMAP", min.dist=1, spread=2, n.cores=30)
+
+con$plotGraph(size=0.2)
+```
+
+Prepare data for annotation:
+
+```{r}
+marker_path <- "../markers/bm_cb.md"
+clf_datas <- pblapply(con$samples, function(p2) 
+  getClassificationData(Matrix::t(p2$misc$rawCounts), marker_path))
+
+marker_scores <- pblapply(clf_datas, getMarkerScoresPerCellType)
+```
+
+## Annotation
+
+Now we can run individual annotation on each dataset:
+
+```{r}
+ann_by_dataset <- pbmapply(function(cd, ms, p2) 
+  assignCellsByScores(p2$graphs$PCA, scores=ms, clf.data=cd),
+  clf_datas, marker_scores, panel_preprocessed, SIMPLIFY=F) %>% 
+  setNames(names(clf_datas))
+
+all_annotations <- lapply(ann_by_dataset, function(an) an$annotation$l1) %>% Reduce(c, .)
+con$plotGraph(groups=all_annotations, size=0.2, plot.na=F)
+```
+
+We can see that running annotation on individual samples doesn't neccesserily guarantee smoothness of labeling on the joint graph, 
+as such approach can't utilize joint structure. To deal with it we can run annotation on the whole graph:
+
+```{r}
+all_scores <- Reduce(rbind, marker_scores)
+ann_by_level <- assignCellsByScores(con$graph, scores=all_scores, clf.data=clf_datas[[1]], score.fixing.threshold=0.99)
+con$plotGraph(groups=ann_by_level$annotation$l1, size=0.2, plot.na=F)
+```
+
+To further deal with noise, we can use clustering information:
+
+```{r}
+clusters <- con$clusters$leiden$groups
+annotation <- assignCellsByScores(con$graph, scores=all_scores, clf.data=clf_datas[[1]], 
+                                  clusters=clusters)$annotation$l1
+con$plotGraph(groups=annotation, size=0.2)
+# con$plotGraph(groups=clusters, size=0.2, shuffle.colors=T)
+```
+
+In the current example, clustering resolution is too low to separate all subpopulatons, which lead to lack of CLP and DC populations. Let's increase resolution:
+
+```{r}
+target_clusters <- clusters[names(annotation)[annotation %in% c("Progenitors", "Plasma")]] %>% 
+  as.character() %>% unique()
+clusters_inc <- findSubcommunities(con, target_clusters, groups=clusters)
+con$plotGraph(groups=clusters_inc, size=0.2, shuffle.colors=T)
+```
+
+And now we can re-run annotation:
+
+```{r}
+annotation <- assignCellsByScores(con$graph, scores=all_scores, clf.data=clf_datas[[1]], 
+                                  clusters=clusters_inc)$annotation$l1
+con$plotGraph(groups=annotation, size=0.2)
+```
