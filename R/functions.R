@@ -65,8 +65,8 @@ diffuseGraph <- function(graph, scores, fading=10, fading.const=0.5, score.fixin
 #' Assign cell types for each cell based on type scores. Optionally uses `clusters` to expand annotation.
 #'
 #' @param graph cell graph from Seurat, Pagoda2 or some other tool
+#' @param clf.data classification data from `getClassificationData`
 #' @param scores cell type scores from `getMarkerScoresPerCellType` function. Re-estimated if NULL
-#' @param classification.tree cell type hierarchy from classification data (see `getClassificationData`)
 #' @param clusters cluster assignment of data. Used to expand annotation on these clusters.
 #' @param verbose verbosity level (from 0 to 2)
 #' @inheritDotParams diffuseGraph fading fading.const verbose tol score.fixing.threshold
@@ -125,7 +125,8 @@ assignCellsByScores <- function(graph, clf.data, scores=NULL, clusters=NULL, ver
 
 ## Score assignment
 
-tfIdfFeatureNorm <- function(cm, max.quantile=0.95, max.smooth=1e-10) {
+#' @export
+normalizeTfIdfWithFeatures <- function(cm, max.quantile=0.95, max.smooth=1e-10) {
   cm@x <- cm@x / rep(Matrix::colSums(cm), diff(cm@p))
   cm <- Matrix::t(cm)
 
