@@ -23,6 +23,7 @@ unifyGeneIds <- function(cm, data.gene.id.type, marker.gene.id.type, db=NULL, ve
   return(list(cm=cm, gene.table=gene.table))
 }
 
+#' @export
 parseMarkerFile <- function(path) {
   marker.list <- path %>% readChar(file.info(.)$size) %>% paste0("\n") %>% garnett:::parse_input() %>% as.list()
   marker.list$name_order <- NULL
@@ -38,19 +39,24 @@ createClassificationTree <- function(marker.list) {
 #' Get cell type information from the marker file
 #'
 #' @param cm gene count matrix. May be in raw, TC-normalized or tf-idf-normalized format (in case of tf-idf, `prenormalized` must be set to `T`)
-#' @param marker.path path to the file with marker genes
+#' @param markers path to the file with marker genes or parsed marker list from `parseMarkerFile` function
 #' @param prenormalized is `cm` in tf-idf-normalized format? Default: FALSE.
 #' @export
-getClassificationData <- function(cm, marker.path, prenormalized=F, data.gene.id.type="SYMBOL", marker.gene.id.type="SYMBOL", db=NULL, verbose=F) {
+getClassificationData <- function(cm, markers, prenormalized=F, data.gene.id.type="SYMBOL", marker.gene.id.type="SYMBOL", db=NULL, verbose=F) {
   if (!prenormalized) {
     cm <- normalizeTfIdfWithFeatures(cm)
   }
 
   gi <- unifyGeneIds(cm, data.gene.id.type=data.gene.id.type, marker.gene.id.type=marker.gene.id.type, db=db, verbose=verbose)
 
-  marker.list <- parseMarkerFile(marker.path)
-  classification.tree <- createClassificationTree(marker.list)
+  if (is.character(markers)) {
+    markers <- parseMarkerFile(markers)
+  } else if (!is.list(markers)) {
+     stop("Unknown format of markers")
+  }
 
-  res <- list(cm=gi$cm, classification.tree=classification.tree, gene.table=gi$gene.table, marker.list=marker.list)
+  classification.tree <- createClassificationTree(markers)
+
+  res <- list(cm=gi$cm, classification.tree=classification.tree, gene.table=gi$gene.table, marker.list=markers)
   return(res)
 }

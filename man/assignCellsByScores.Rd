@@ -4,22 +4,25 @@
 \alias{assignCellsByScores}
 \title{Assign cell types for each cell based on type scores. Optionally uses `clusters` to expand annotation.}
 \usage{
-assignCellsByScores(graph, scores, classification.tree, clusters = NULL,
-  ...)
+assignCellsByScores(graph, clf.data, scores = NULL, clusters = NULL,
+  verbose = 0, n.cores = 1, ...)
 }
 \arguments{
 \item{graph}{cell graph from Seurat, Pagoda2 or some other tool}
 
-\item{scores}{cell type scores from `getMarkerScoresPerCellType` function}
+\item{clf.data}{classification data from `getClassificationData`}
 
-\item{classification.tree}{cell type hierarchy from classification data (see `getClassificationData`)}
+\item{scores}{cell type scores from `getMarkerScoresPerCellType` function. Re-estimated if NULL}
 
 \item{clusters}{cluster assignment of data. Used to expand annotation on these clusters.}
 
-\item{...}{Arguments passed on to \code{diffuseSubgraph}
+\item{verbose}{verbosity level (from 0 to 2)}
+
+\item{...}{Arguments passed on to \code{diffuseGraph}
 \describe{
   \item{fading}{fading level for graph diffusion}
   \item{fading.const}{constant in exponent for graph diffusion}
+  \item{score.fixing.threshold}{threshold for a label to be considered true}
   \item{verbose}{print progress bar}
   \item{tol}{tolerance for diffusion stopping}
 }}

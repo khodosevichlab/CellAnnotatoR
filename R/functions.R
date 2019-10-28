@@ -87,8 +87,8 @@ assignCellsByScores <- function(graph, clf.data, scores=NULL, clusters=NULL, ver
     stop("Unknown graph format. Only adjacency matrix or igraph are supported")
   }
 
-  paths <- classificationTreeToDf(clf.data$classification.tree) %$% split(., PathLen) %>%
-    lapply(function(df) split(df$Node, df$Parent)) %>% .[order(names(.))]
+  subtypes.per.depth.level <- classificationTreeToDf(clf.data$classification.tree) %$%
+    split(., PathLen) %>% lapply(function(df) split(df$Node, df$Parent)) %>% .[order(names(.))]
 
   c.ann <- rep("root", length(igraph::V(graph))) %>% setNames(names(igraph::V(graph)))
   ann.by.level <- list()
@@ -96,21 +96,21 @@ assignCellsByScores <- function(graph, clf.data, scores=NULL, clusters=NULL, ver
   scores.posterior <- scores
 
   possible.ann.levels <- c()
-  for (pl in 1:length(paths)) {
+  for (pl in 1:length(subtypes.per.depth.level)) {
     if (verbose > 0) message("Level ", pl, "...")
 
-    c.path <- paths[[pl]]
-    possible.ann.levels %<>% c(unlist(c.path)) %>% unique()
-    res <- plapply(names(c.path), function(p) {
+    c.subtypes.per.parent <- subtypes.per.depth.level[[pl]]
+    possible.ann.levels %<>% c(unlist(c.subtypes.per.parent)) %>% unique()
+    res <- plapply(names(c.subtypes.per.parent), function(p) {
       c.cbs <- names(c.ann)[c.ann == p]
-      diffuseGraph(igraph::induced_subgraph(graph, c.cbs), scores=scores[c.cbs, c.path[[p]]],
+      diffuseGraph(igraph::induced_subgraph(graph, c.cbs), scores=scores[c.cbs, c.subtypes.per.parent[[p]]],
                       clusters=clusters, verbose=(verbose > 1), ...)
     }, verbose=(verbose > 0), n.cores=n.cores) %>% .[!sapply(., is.null)]
 
     res.ann <- lapply(res, `[[`, "annotation") %>% Reduce(c, .)
     c.ann[names(res.ann)] <- res.ann
     for (cr in res) {
-      scores.posterior[rownames(cr$scores), colnames(cr$scores)]
+      scores.posterior[rownames(cr$scores), colnames(cr$scores)] <- cr$scores
     }
 
     level.name <- paste0("l", pl)
