@@ -13,11 +13,18 @@ plapply <- function(..., n.cores=1, verbose=F) {
 
 expandAnnotationToClusters <- function(scores, clusters) {
   clusters <- droplevels(clusters[rownames(scores)])
-  ann.update <- clusters %>% split(names(.), .) %>%
-    sapply(function(cbs) colSums(scores[cbs, ,drop=F]) %>% which.max() %>% names()) %>%
+  ann.update <- split(1:length(clusters), clusters) %>%
+    sapply(function(cids) colSums(scores[cids, ,drop=F]) %>% which.max() %>% names()) %>%
     .[clusters] %>% setNames(names(clusters))
 
   return(ann.update)
+}
+
+annotationFromScores <- function(scores, clusters=NULL) {
+  if (!is.null(clusters))
+    return(expandAnnotationToClusters(scores, clusters))
+
+  return(colnames(scores)[apply(scores, 1, which.max)] %>% setNames(rownames(scores)))
 }
 
 #' Run diffusion on graph
@@ -28,7 +35,7 @@ expandAnnotationToClusters <- function(scores, clusters) {
 #' @param verbose print progress bar
 #' @param tol tolerance for diffusion stopping
 diffuseGraph <- function(graph, scores, fading=10, fading.const=0.5, score.fixing.threshold=0.8,
-                         clusters=NULL, verbose=FALSE, max.iters=1000, tol=1e-3) {
+                         verbose=FALSE, max.iters=1000, tol=1e-3) {
   cbs <- igraph::V(graph)$name
   if (length(cbs) == 0)
     return(NULL)
@@ -44,27 +51,20 @@ diffuseGraph <- function(graph, scores, fading=10, fading.const=0.5, score.fixin
 
   is.fixed <- (apply(scores, 1, max) > score.fixing.threshold)
 
-  if (nrow(edges) > 0) {
-    edge.weights <- igraph::edge.attributes(graph)$weight
-    res <- conos:::smoothMatrixOnGraph(edges, edge.weights, scores, is.label.fixed=is.fixed, max_n_iters=max.iters,
-                                       diffusion_fading=fading, diffusion_fading_const=fading.const, verbose=verbose,
-                                       tol=tol, normalize=T)
-  } else {
-    res <- scores
-  }
+  if (nrow(edges) == 0)
+    return(scores)
 
-  if (is.null(clusters)) {
-    ann.update <- colnames(res)[apply(res, 1, which.max)] %>% setNames(rownames(res))
-  } else {
-    ann.update <- expandAnnotationToClusters(res, clusters)
-  }
-
-  return(list(annotation=ann.update, scores=res))
+  edge.weights <- igraph::edge.attributes(graph)$weight
+  res <- conos:::smoothMatrixOnGraph(edges, edge.weights, scores, is.label.fixed=is.fixed, max_n_iters=max.iters,
+                                     diffusion_fading=fading, diffusion_fading_const=fading.const, verbose=verbose,
+                                     tol=tol, normalize=T)
+  return(res)
 }
 
 #' Assign cell types for each cell based on type scores. Optionally uses `clusters` to expand annotation.
 #'
-#' @param graph cell graph from Seurat, Pagoda2 or some other tool
+#' @param graph cell graph from Seurat, Pagoda2 or some other tool. Can be either in igraph or adjacency matrix format.
+#'    Use `graph=NULL` to skip graph diffusion step and get raw score annotation (useful when debug marker genes).
 #' @param clf.data classification data from `getClassificationData`
 #' @param scores cell type scores from `getMarkerScoresPerCellType` function. Re-estimated if NULL
 #' @param clusters cluster assignment of data. Used to expand annotation on these clusters.
@@ -81,16 +81,18 @@ assignCellsByScores <- function(graph, clf.data, scores=NULL, clusters=NULL, ver
     scores <- getMarkerScoresPerCellType(clf.data)
   }
 
-  if ((is(graph, "Matrix") || is(graph, "matrix")) && ncol(graph) == nrow(graph)) {
-    graph <- igraph::graph_from_adjacency_matrix(graph, weighted=T)
-  } else if (!is(graph, "igraph")) {
-    stop("Unknown graph format. Only adjacency matrix or igraph are supported")
+  if (!is.null(graph)) {
+    if ((is(graph, "Matrix") || is(graph, "matrix")) && ncol(graph) == nrow(graph)) {
+      graph <- igraph::graph_from_adjacency_matrix(graph, weighted=T)
+    } else if (!is(graph, "igraph")) {
+      stop("Unknown graph format. Only adjacency matrix or igraph are supported")
+    }
   }
 
   subtypes.per.depth.level <- classificationTreeToDf(clf.data$classification.tree) %$%
     split(., PathLen) %>% lapply(function(df) split(df$Node, df$Parent)) %>% .[order(names(.))]
 
-  c.ann <- rep("root", length(igraph::V(graph))) %>% setNames(names(igraph::V(graph)))
+  c.ann <- rep("root", nrow(scores)) %>% setNames(rownames(scores))
   ann.by.level <- list()
   scores.by.level <- list()
   scores.posterior <- scores
@@ -101,17 +103,27 @@ assignCellsByScores <- function(graph, clf.data, scores=NULL, clusters=NULL, ver
 
     c.subtypes.per.parent <- subtypes.per.depth.level[[pl]]
     possible.ann.levels %<>% c(unlist(c.subtypes.per.parent)) %>% unique()
-    res <- plapply(names(c.subtypes.per.parent), function(p) {
-      c.cbs <- names(c.ann)[c.ann == p]
-      diffuseGraph(igraph::induced_subgraph(graph, c.cbs), scores=scores[c.cbs, c.subtypes.per.parent[[p]]],
-                      clusters=clusters, verbose=(verbose > 1), ...)
-    }, verbose=(verbose > 0), n.cores=n.cores) %>% .[!sapply(., is.null)]
 
-    res.ann <- lapply(res, `[[`, "annotation") %>% Reduce(c, .)
-    c.ann[names(res.ann)] <- res.ann
-    for (cr in res) {
-      scores.posterior[rownames(cr$scores), colnames(cr$scores)] <- cr$scores
+    c.parents <- names(c.subtypes.per.parent) %>% setNames(., .)
+    cbs.per.typs <- lapply(c.parents, function(p) names(c.ann)[c.ann == p]) %>%
+      .[sapply(., length) > 0]
+    c.parents %<>% .[names(cbs.per.typs)]
+
+    scores.per.type <- lapply(c.parents, function(p) scores[cbs.per.typs[[p]], c.subtypes.per.parent[[p]]])
+
+    if (!is.null(graph)) {
+      scores.per.type <- plapply(c.parents, function(p) {
+        diffuseGraph(igraph::induced_subgraph(graph, cbs.per.typs[[p]]),
+                     scores=scores.per.type[[p]], verbose=(verbose > 1), ...)
+      }, verbose=(verbose > 0), n.cores=n.cores)
+
+      for (cs in scores.per.type) {
+        scores.posterior[rownames(cs), colnames(cs)] <- cs
+      }
     }
+
+    res.ann <- lapply(scores.per.type, annotationFromScores, clusters) %>% Reduce(c, .)
+    c.ann[names(res.ann)] <- res.ann
 
     level.name <- paste0("l", pl)
     ann.by.level[[level.name]] <- c.ann

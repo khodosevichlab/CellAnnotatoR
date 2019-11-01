@@ -5,8 +5,8 @@
 \title{Run diffusion on graph}
 \usage{
 diffuseGraph(graph, scores, fading = 10, fading.const = 0.5,
-  score.fixing.threshold = 0.8, clusters = NULL, verbose = FALSE,
-  max.iters = 1000, tol = 0.001)
+  score.fixing.threshold = 0.8, verbose = FALSE, max.iters = 1000,
+  tol = 0.001)
 }
 \arguments{
 \item{fading}{fading level for graph diffusion}

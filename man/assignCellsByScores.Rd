@@ -8,7 +8,8 @@ assignCellsByScores(graph, clf.data, scores = NULL, clusters = NULL,
   verbose = 0, n.cores = 1, ...)
 }
 \arguments{
-\item{graph}{cell graph from Seurat, Pagoda2 or some other tool}
+\item{graph}{cell graph from Seurat, Pagoda2 or some other tool. Can be either in igraph or adjacency matrix format.
+Use `graph=NULL` to skip graph diffusion step and get raw score annotation (useful when debug marker genes).}
 
 \item{clf.data}{classification data from `getClassificationData`}
 
