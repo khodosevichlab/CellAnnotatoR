@@ -1,5 +1,12 @@
+#' @useDynLib CellAnnotatoR, .registration = TRUE
+#' @importFrom Rcpp sourceCpp
 #' @importFrom magrittr %<>% %$% %>%
 NULL
+
+## Correct unloading of the library
+.onUnload <- function (libpath) {
+  library.dynam.unload("CellAnnotatoR", libpath)
+}
 
 plapply <- function(..., n.cores=1, verbose=F) {
   if (verbose)
@@ -25,6 +32,12 @@ annotationFromScores <- function(scores, clusters=NULL) {
     return(expandAnnotationToClusters(scores, clusters))
 
   return(colnames(scores)[apply(scores, 1, which.max)] %>% setNames(rownames(scores)))
+}
+
+#' @export
+getAnnotationConfidence <- function(annotation, scores) {
+  mapply(function(i,j) scores[i, j], 1:nrow(scores), match(annotation, colnames(scores))) %>%
+    setNames(rownames(scores))
 }
 
 #' Run diffusion on graph
@@ -154,14 +167,65 @@ normalizeTfIdfWithFeatures <- function(cm, max.quantile=0.95, max.smooth=1e-10) 
   return(tf.idf)
 }
 
-getCellTypeScore <- function(markers, tf.idf, aggr=T, do.multiply=T) {
-  c.submat <- tf.idf[, intersect(markers@expressed, colnames(tf.idf)), drop=F]
+getCellTypeScoreFull <- function(markers, tf.idf, aggr=T) {
+  if (length(markers$expressed) == 0) {
+    if (aggr) {
+      scores <- setNames(rep(0, nrow(tf.idf)), rownames(tf.idf))
+    } else {
+      scores <- matrix(0, nrow=nrow(tf.idf), ncol=0, dimnames=list(rownames(tf.idf), character()))
+    }
+
+    max.positive.expr <- setNames(rep(0, nrow(tf.idf)), rownames(tf.idf))
+  } else {
+    m.expressed <- intersect(markers$expressed, colnames(tf.idf))
+    c.submat <- tf.idf[, m.expressed, drop=F]
+    c.submat.t <- Matrix::t(c.submat)
+    scores <- if (aggr) Matrix::colSums(c.submat.t) else c.submat
+    max.positive.expr <- apply(c.submat.t, 2, max)
+  }
+
+  not.expressed.genes <- intersect(markers$not_expressed, colnames(tf.idf))
+  if (length(not.expressed.genes) == 0) {
+    score.mult <- setNames(rep(1, nrow(tf.idf)), rownames(tf.idf))
+  } else {
+    max.negative.expr <- apply(tf.idf[, not.expressed.genes, drop=F], 1, max)
+    score.mult <- pmax(max.positive.expr - max.negative.expr, 0) / max.positive.expr
+    score.mult[is.na(score.mult)] <- 0
+  }
+
+  res <- list(scores=scores, mult=score.mult, max.positive=max.positive.expr, sm=(scores * score.mult))
+  return(res)
+}
+
+getCellTypeScore <- function(markers, tf.idf, aggr=T, do.multiply=T, check.gene.presence=T) {
+  if (length(markers$expressed) == 0) {
+    if (aggr) {
+      res <- setNames(rep(0, nrow(tf.idf)), rownames(tf.idf))
+    } else {
+      res <- matrix(0, nrow=nrow(tf.idf), ncol=0, dimnames=list(rownames(tf.idf), character()))
+    }
+
+    if (do.multiply)
+      return(res)
+
+    score.mult <- setNames(rep(1, nrow(tf.idf)), rownames(tf.idf))
+    return(list(scores=res, mult=score.mult))
+  }
+
+  m.expressed <- if (check.gene.presence) intersect(markers$expressed, colnames(tf.idf)) else markers$expressed # TODO: Remove this?
+
+  c.submat <- tf.idf[, m.expressed, drop=F]
   c.submat.t <- Matrix::t(c.submat)
   scores <- if (aggr) Matrix::colSums(c.submat.t) else c.submat
 
-  not.expressed.genes <- intersect(markers@not_expressed, colnames(tf.idf))
-  if (length(not.expressed.genes) == 0)
-    return(scores)
+  not.expressed.genes <- intersect(markers$not_expressed, colnames(tf.idf))
+  if (length(not.expressed.genes) == 0) {
+    if (do.multiply)
+      return(scores)
+
+    score.mult <- setNames(rep(1, nrow(tf.idf)), rownames(tf.idf))
+    return(list(scores=res, mult=score.mult))
+  }
 
   max.positive.expr <- apply(c.submat.t, 2, max)
   max.negative.expr <- apply(tf.idf[, not.expressed.genes, drop=F], 1, max)
@@ -205,7 +269,6 @@ getMarkerScoresPerCellType <- function(clf, aggr=T) {
 
 ## Utils
 
-#' @export
 mergeAnnotationToLevel <- function(level, annotation, classification.tree) {
   parent.types <- classificationTreeToDf(classification.tree) %$% Node[PathLen == level] %>% unique()
   if (length(parent.types) == 0) {
@@ -221,6 +284,14 @@ mergeAnnotationToLevel <- function(level, annotation, classification.tree) {
   }
 
   return(setNames(type.map[annotation], names(annotation)))
+}
+
+#' @export
+mergeAnnotationByLevels <- function(annotation, classification.tree) {
+  max.level <- classificationTreeToDf(classification.tree)$PathLen %>% max()
+  anns <- 1:max.level %>% setNames(., paste0("l", .)) %>%
+    lapply(mergeAnnotationToLevel, annotation, classification.tree)
+  return(anns)
 }
 
 classificationTreeToDf <- function(classification.tree) {

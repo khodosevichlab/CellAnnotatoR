@@ -27,11 +27,11 @@ unifyGeneIds <- function(cm, data.gene.id.type, marker.gene.id.type, db=NULL, ve
 parseMarkerFile <- function(path) {
   marker.list <- path %>% readChar(file.info(.)$size) %>% paste0("\n") %>% garnett:::parse_input() %>% as.list()
   marker.list$name_order <- NULL
-  return(marker.list)
+  return(lapply(marker.list, function(x) list(expressed=x@expressed, not_expressed=x@not_expressed, parent=x@parenttype)))
 }
 
 createClassificationTree <- function(marker.list) {
-  parents <- sapply(marker.list, function(pl) if(length(pl@parenttype) == 0) "root" else pl@parenttype)
+  parents <- sapply(marker.list, function(pl) if(length(pl$parent) == 0) "root" else pl$parent)
   tree <- c(parents, names(marker.list)) %>% matrix(ncol=2) %>% t() %>% igraph::make_directed_graph()
   return(tree)
 }

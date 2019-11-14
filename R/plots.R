@@ -20,30 +20,38 @@ plotGarnettAssignemnts <- function(embedding, assignment, plot.ambig=T, show.leg
 }
 
 #' @export
-plotTypeMarkers <- function(marker.list, cell.type, embedding, count.matrix, show.legend=T, ...) {
+plotTypeMarkers <- function(embedding, count.matrix, cell.type, marker.list, show.legend=T, ...) {
   plot.func <- function(gene, title) {
     conos:::embeddingPlot(embedding, colors=count.matrix[,gene], show.legend=show.legend, title=title, ...)
   }
 
-  res <- marker.list[[cell.type]]@expressed %>% intersect(colnames(count.matrix)) %>%
+  res <- marker.list[[cell.type]]$expressed %>% intersect(colnames(count.matrix)) %>%
     lapply(function(g) plot.func(g, paste0(g, "+"))) %>%
-    c(marker.list[[cell.type]]@not_expressed %>% intersect(colnames(count.matrix)) %>%
+    c(marker.list[[cell.type]]$not_expressed %>% intersect(colnames(count.matrix)) %>%
         lapply(function(g) plot.func(g, paste0(g, "-"))))
 
   return(res)
 }
 
 #' @export
-plotSubtypeMarkers <- function(parent.type, embedding, count.matrix, clf.data,
+plotSubtypeMarkers <- function(embedding, count.matrix, parent.type="root", clf.data=NULL, clf.tree=NULL, marker.list=NULL,
                                show.legend=F, max.depth=NULL, drop.missing=T, build.panel=T, n.col=NULL, n.row=NULL, ...) {
+  if (is.null(clf.data) && (is.null(clf.tree) || is.null(marker.list)))
+    stop("Either clf.data or both clf.tree and marker.list must be provided")
+
+  if (!is.null(clf.data)) {
+    clf.tree <- clf.data$classification.tree
+    marker.list <- clf.data$marker.list
+  }
+
   markers <- list()
 
-  for (type in getAllSubtypes(parent.type, clf.data$classification.tree, max.depth=max.depth)) {
-    for (g in clf.data$marker.list[[type]]@expressed) {
+  for (type in getAllSubtypes(parent.type, clf.tree, max.depth=max.depth)) {
+    for (g in marker.list[[type]]$expressed) {
       markers[[g]] %<>% c(paste0(type, "(+)"))
     }
 
-    for (g in clf.data$marker.list[[type]]@not_expressed) {
+    for (g in marker.list[[type]]$not_expressed) {
       markers[[g]] %<>% c(paste0(type, "(-)"))
     }
   }
@@ -83,9 +91,7 @@ plotConfidenceByLevels <- function(embedding, annotation.by.level, scores, show.
   }
 
   conf.per.level <- lapply(names(scores), function(n)
-    mapply(function(i,j) scores[[n]][i, j], 1:nrow(scores[[n]]),
-           match(annotation.by.level[[n]], colnames(scores[[n]]))) %>%
-      setNames(rownames(scores[[n]])))
+    getAnnotationConfidence(annotation.by.level[[n]], scores[[n]]))
 
   res <- lapply(1:length(conf.per.level), function(i)
     conos:::embeddingPlot(embedding, colors=conf.per.level[[i]], title=paste("Level", i),

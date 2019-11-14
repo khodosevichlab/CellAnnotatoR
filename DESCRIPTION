@@ -16,7 +16,8 @@ Imports:
     Matrix,
     tibble,
     magrittr,
-    cowplot
+    cowplot,
+    Rcpp
 Suggests:
     ggtree (>= 1.99.1),
     knitr,
@@ -27,3 +28,5 @@ Remotes:
     YuLab-SMU/ggtree
 RoxygenNote: 6.1.1
 VignetteBuilder: knitr
+LinkingTo: 
+    Rcpp
