@@ -1,5 +1,5 @@
 #' @export
-plotAssignmentScores <- function(parent.node, scores, classification.tree, embedding, ...) {
+plotAssignmentScores <- function(embedding, scores, classification.tree, parent.node="root", ...) {
   classificationTreeToDf(classification.tree) %>%
     dplyr::filter(Parent == parent.node) %>% .$Node %>%
     lapply(function(n) conos:::embeddingPlot(embedding, colors=setNames(scores[, n], rownames(scores)),
@@ -118,4 +118,36 @@ plotTypeHierarchy <- function(classification.tree, layout="slanted", xlims=NULL,
     ggtree::geom_rootpoint() +
     ggtree::geom_label2(ggplot2::aes(label=c(cg$tip.label, cg$node.label)[node]), size=font.size) +
     ggplot2::xlim(xlims)
+}
+
+plotUncertaintyPerCell <- function(embedding, uncertainty.info, palette=colorRampPalette(c("gray", "#ffeda0", "#fec44f", "#f03b20")), alpha=0.3, ...) {
+  names(uncertainty.info) %>% setNames(., .) %>% lapply(function(n)
+    conos::embeddingPlot(embedding, colors=uncertainty.info[[n]], alpha=alpha, title=n, palette=palette, ...))
+}
+
+plotUncertaintyPerClust <- function(uncertainty.per.clust, annotation=NULL, clusters=NULL, ann.per.clust=NULL, threshold=0.5, text.angle=45, title=NULL) {
+  if (!is.null(ann.per.clust) && (is.null(annotation) != is.null(clusters)))
+    stop("Either both or none of annotation and clusters must be provided")
+
+  p.df <- tibble::enframe(uncertainty.per.clust, name="Cluster", value="Uncertainty")
+  p.aes <- ggplot2::aes()
+  if (!is.null(annotation)) {
+    ann.per.clust <- getAnnotationPerCluster(annotation, clusters)
+  }
+
+  if (!is.null(ann.per.clust)) {
+    p.aes <- ggplot2::aes(fill=Type)
+    p.df %<>% dplyr::mutate(Type=ann.per.clust[Cluster], Cluster=factor(Cluster, levels=names(sort(ann.per.clust))))
+  }
+
+  gg <- ggplot2::ggplot(p.df, ggplot2::aes(x=Cluster, y=Uncertainty)) +
+    ggplot2::geom_bar(p.aes, stat="identity") +
+    ggplot2::theme(axis.text.x=ggplot2::element_text(angle=text.angle, hjust=1)) +
+    ggplot2::geom_hline(ggplot2::aes(yintercept=threshold)) + ggplot2::ylim(0, 1)
+
+  if (!is.null(title)) {
+    gg <- gg + ggplot2::ggtitle(title)
+  }
+
+  return(gg)
 }

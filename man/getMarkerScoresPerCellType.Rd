@@ -4,10 +4,12 @@
 \alias{getMarkerScoresPerCellType}
 \title{Return initial scores of each cell type for each cell}
 \usage{
-getMarkerScoresPerCellType(clf, aggr = T)
+getMarkerScoresPerCellType(clf, score.info = NULL, aggr = T)
 }
 \arguments{
 \item{clf}{classification data from `getClassificationData`}
+
+\item{score.info}{pre-calculated score info from `getCellTypeScoreInfo`}
 
 \item{aggr}{should individual gene scores be aggregated per cell type? If `FALSE`,
 returns list of data.frames, showing scores of each gene for each cell.

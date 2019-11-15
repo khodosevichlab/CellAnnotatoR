@@ -4,8 +4,8 @@
 \alias{assignCellsByScores}
 \title{Assign cell types for each cell based on type scores. Optionally uses `clusters` to expand annotation.}
 \usage{
-assignCellsByScores(graph, clf.data, scores = NULL, clusters = NULL,
-  verbose = 0, n.cores = 1, ...)
+assignCellsByScores(graph, clf.data, score.info = NULL,
+  clusters = NULL, verbose = 0, ...)
 }
 \arguments{
 \item{graph}{cell graph from Seurat, Pagoda2 or some other tool. Can be either in igraph or adjacency matrix format.
@@ -13,19 +13,15 @@ Use `graph=NULL` to skip graph diffusion step and get raw score annotation (usef
 
 \item{clf.data}{classification data from `getClassificationData`}
 
-\item{scores}{cell type scores from `getMarkerScoresPerCellType` function. Re-estimated if NULL}
+\item{score.info}{cell type scores from `getCellTypeScoreInfo` function. Re-estimated if NULL}
 
 \item{clusters}{cluster assignment of data. Used to expand annotation on these clusters.}
 
 \item{verbose}{verbosity level (from 0 to 2)}
 
-\item{...}{Arguments passed on to \code{diffuseGraph}
+\item{...}{Arguments passed on to \code{diffuseScorePerType}
 \describe{
-  \item{fading}{fading level for graph diffusion}
-  \item{fading.const}{constant in exponent for graph diffusion}
-  \item{score.fixing.threshold}{threshold for a label to be considered true}
-  \item{verbose}{print progress bar}
-  \item{tol}{tolerance for diffusion stopping}
+  \item{}{}
 }}
 }
 \description{

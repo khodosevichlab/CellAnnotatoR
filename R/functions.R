@@ -34,10 +34,12 @@ annotationFromScores <- function(scores, clusters=NULL) {
   return(colnames(scores)[apply(scores, 1, which.max)] %>% setNames(rownames(scores)))
 }
 
-#' @export
-getAnnotationConfidence <- function(annotation, scores) {
-  mapply(function(i,j) scores[i, j], 1:nrow(scores), match(annotation, colnames(scores))) %>%
-    setNames(rownames(scores))
+#' @inheritDotParams diffuseGraph fading fading.const verbose tol score.fixing.threshold
+diffuseScorePerType <- function(scores.per.type, graph, parents, cbs.per.type, verbose, n.cores=1, ...) {
+  plapply(parents, function(p)
+    diffuseGraph(igraph::induced_subgraph(graph, cbs.per.type[[p]]),
+                 scores=scores.per.type[[p]], verbose=verbose, ...),
+    verbose=(verbose > 0), n.cores=n.cores)
 }
 
 #' Run diffusion on graph
@@ -79,20 +81,22 @@ diffuseGraph <- function(graph, scores, fading=10, fading.const=0.5, score.fixin
 #' @param graph cell graph from Seurat, Pagoda2 or some other tool. Can be either in igraph or adjacency matrix format.
 #'    Use `graph=NULL` to skip graph diffusion step and get raw score annotation (useful when debug marker genes).
 #' @param clf.data classification data from `getClassificationData`
-#' @param scores cell type scores from `getMarkerScoresPerCellType` function. Re-estimated if NULL
+#' @param score.info cell type scores from `getCellTypeScoreInfo` function. Re-estimated if NULL
 #' @param clusters cluster assignment of data. Used to expand annotation on these clusters.
 #' @param verbose verbosity level (from 0 to 2)
-#' @inheritDotParams diffuseGraph fading fading.const verbose tol score.fixing.threshold
+#' @inheritDotParams diffuseScorePerType
 #'
 #' @export
-assignCellsByScores <- function(graph, clf.data, scores=NULL, clusters=NULL, verbose=0, n.cores=1, ...) {
+assignCellsByScores <- function(graph, clf.data, score.info=NULL, clusters=NULL, verbose=0, ...) {
   if (!is.null(clusters)) {
     clusters <- as.factor(clusters)
   }
 
-  if (is.null(scores)) {
-    scores <- getMarkerScoresPerCellType(clf.data)
+  if (is.null(score.info)) {
+    score.info <- lapply(clf.data$marker.list, getCellTypeScoreInfo, clf.data$cm)
   }
+
+  scores <- getMarkerScoresPerCellType(clf.data, score.info=score.info)
 
   if (!is.null(graph)) {
     if ((is(graph, "Matrix") || is(graph, "matrix")) && ncol(graph) == nrow(graph)) {
@@ -106,7 +110,9 @@ assignCellsByScores <- function(graph, clf.data, scores=NULL, clusters=NULL, ver
     split(., PathLen) %>% lapply(function(df) split(df$Node, df$Parent)) %>% .[order(names(.))]
 
   c.ann <- rep("root", nrow(scores)) %>% setNames(rownames(scores))
+  c.ann.filt <- c.ann
   ann.by.level <- list()
+  ann.filt.by.level <- list()
   scores.by.level <- list()
   scores.posterior <- scores
 
@@ -118,17 +124,14 @@ assignCellsByScores <- function(graph, clf.data, scores=NULL, clusters=NULL, ver
     possible.ann.levels %<>% c(unlist(c.subtypes.per.parent)) %>% unique()
 
     c.parents <- names(c.subtypes.per.parent) %>% setNames(., .)
-    cbs.per.typs <- lapply(c.parents, function(p) names(c.ann)[c.ann == p]) %>%
+    cbs.per.type <- lapply(c.parents, function(p) names(c.ann)[c.ann == p]) %>%
       .[sapply(., length) > 0]
-    c.parents %<>% .[names(cbs.per.typs)]
+    c.parents %<>% .[names(cbs.per.type)]
 
-    scores.per.type <- lapply(c.parents, function(p) scores[cbs.per.typs[[p]], c.subtypes.per.parent[[p]]])
+    scores.per.type <- lapply(c.parents, function(p) scores[cbs.per.type[[p]], c.subtypes.per.parent[[p]]])
 
     if (!is.null(graph)) {
-      scores.per.type <- plapply(c.parents, function(p) {
-        diffuseGraph(igraph::induced_subgraph(graph, cbs.per.typs[[p]]),
-                     scores=scores.per.type[[p]], verbose=(verbose > 1), ...)
-      }, verbose=(verbose > 0), n.cores=n.cores)
+      scores.per.type %<>% diffuseScorePerType(graph, c.parents, cbs.per.type, verbose=(verbose > 1), ...)
 
       for (cs in scores.per.type) {
         scores.posterior[rownames(cs), colnames(cs)] <- cs
@@ -136,15 +139,20 @@ assignCellsByScores <- function(graph, clf.data, scores=NULL, clusters=NULL, ver
     }
 
     res.ann <- lapply(scores.per.type, annotationFromScores, clusters) %>% Reduce(c, .)
+    res.ann.filt <- filterAnnotationByUncertainty(res.ann, scores.posterior[,possible.ann.levels], score.info=score.info,
+                                                  cur.types=unique(res.ann), clusters=clusters)
+
     c.ann[names(res.ann)] <- res.ann
+    c.ann.filt[names(res.ann.filt)] %<>% is.na() %>% ifelse(NA, res.ann.filt)
 
     level.name <- paste0("l", pl)
     ann.by.level[[level.name]] <- c.ann
+    ann.filt.by.level[[level.name]] <- c.ann.filt
     scores.by.level[[level.name]] <- scores.posterior[,possible.ann.levels]
     if (verbose > 0) message("Done")
   }
 
-  return(list(annotation=ann.by.level, scores=scores.by.level))
+  return(list(annotation=ann.by.level, scores=scores.by.level, annotation.filt=ann.filt.by.level))
 }
 
 
@@ -167,7 +175,8 @@ normalizeTfIdfWithFeatures <- function(cm, max.quantile=0.95, max.smooth=1e-10) 
   return(tf.idf)
 }
 
-getCellTypeScoreFull <- function(markers, tf.idf, aggr=T) {
+#' @export
+getCellTypeScoreInfo <- function(markers, tf.idf, aggr=T) {
   if (length(markers$expressed) == 0) {
     if (aggr) {
       scores <- setNames(rep(0, nrow(tf.idf)), rownames(tf.idf))
@@ -193,11 +202,12 @@ getCellTypeScoreFull <- function(markers, tf.idf, aggr=T) {
     score.mult[is.na(score.mult)] <- 0
   }
 
-  res <- list(scores=scores, mult=score.mult, max.positive=max.positive.expr, sm=(scores * score.mult))
+  res <- list(scores.raw=scores, mult=score.mult, max.positive=max.positive.expr, scores=(scores * score.mult))
   return(res)
 }
 
 getCellTypeScore <- function(markers, tf.idf, aggr=T, do.multiply=T, check.gene.presence=T) {
+  .Deprecated("getCellTypeScoreInfo(...)$scores")
   if (length(markers$expressed) == 0) {
     if (aggr) {
       res <- setNames(rep(0, nrow(tf.idf)), rownames(tf.idf))
@@ -242,6 +252,7 @@ getCellTypeScore <- function(markers, tf.idf, aggr=T, do.multiply=T, check.gene.
 #' Return initial scores of each cell type for each cell
 #'
 #' @param clf classification data from `getClassificationData`
+#' @param score.info pre-calculated score info from `getCellTypeScoreInfo`
 #' @param aggr should individual gene scores be aggregated per cell type? If `FALSE`,
 #' returns list of data.frames, showing scores of each gene for each cell.
 #' Useful for debugging list of markers.
@@ -250,21 +261,24 @@ getCellTypeScore <- function(markers, tf.idf, aggr=T, do.multiply=T, check.gene.
 #' Values are cell type scores, normalized per level of hierarchy
 #'
 #' @export
-getMarkerScoresPerCellType <- function(clf, aggr=T) {
-  res <- lapply(clf$marker.list, getCellTypeScore, clf$cm, aggr=aggr)
-
-  if (!aggr)
-    return(lapply(res, as.matrix) %>% lapply(as.data.frame, optional=T))
-
-  clf.nodes <- classificationTreeToDf(clf$classification.tree)
-  res %<>% as.data.frame(optional=T)
-
-  for (nodes in split(clf.nodes$Node, clf.nodes$PathLen)) {
-    res[rowSums(res[, nodes]) < 1e-10, nodes] <- 1
-    res[, nodes]  %<>% `/`(rowSums(.))
+getMarkerScoresPerCellType <- function(clf, score.info=NULL, aggr=T) {
+  if (is.null(score.info)) {
+    score.info <- lapply(clf$marker.list, getCellTypeScoreInfo, clf$cm, aggr=aggr)
   }
 
-  return(res)
+  scores <- lapply(score.info, `[[`, "scores")
+  if (!aggr)
+    return(lapply(scores, as.matrix) %>% lapply(as.data.frame, optional=T))
+
+  clf.nodes <- classificationTreeToDf(clf$classification.tree)
+  scores %<>% as.data.frame(optional=T)
+
+  for (nodes in split(clf.nodes$Node, clf.nodes$PathLen)) {
+    scores[rowSums(scores[, nodes]) < 1e-10, nodes] <- 1
+    scores[, nodes]  %<>% `/`(rowSums(.))
+  }
+
+  return(scores)
 }
 
 ## Utils
@@ -306,6 +320,17 @@ getAllSubtypes <- function(parent.type, classification.tree, max.depth=NULL) {
   paths <- igraph::dfs(classification.tree, parent.type, neimode="out", unreachable=F, dist=T)
   paths <- if (!is.null(max.depth)) names(which(paths$dist <= max.depth)) else names(paths$order)
   return(paths %>% .[!is.na(.)] %>% .[. != parent.type])
+}
+
+getAnnotationPerCluster <- function(annotation, clusters) {
+  ann.per.clust <- table(annotation, clusters[names(annotation)])
+  if (any(colSums(ann.per.clust > 0) != 1))
+    stop("Some clusters match to multiple cell types")
+
+  ann.per.clust %<>% apply(2, which.max) %>% rownames(ann.per.clust)[.] %>%
+    setNames(colnames(ann.per.clust))
+
+  return(ann.per.clust)
 }
 
 ## Validation

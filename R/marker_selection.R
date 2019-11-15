@@ -76,18 +76,18 @@ estimateNegativeMarkerScoreChange <- function(cell.type, annotation, cm.norm, de
 }
 
 prepareMarkerScoringInfo <- function(marker.list, cm.norm) {
-  res <- lapply(marker.list, getCellTypeScoreFull, cm.norm)
+  res <- lapply(marker.list, getCellTypeScoreInfo, cm.norm)
 
   return(list(
-    sum.scores=sapply(res, `[[`, "sm") %>% rowSums(),
-    pos.scores=sapply(res, `[[`, "scores"),
+    sum.scores=sapply(res, `[[`, "scores") %>% rowSums(),
+    pos.scores=sapply(res, `[[`, "scores.raw"),
     neg.scores=1 - sapply(res, `[[`, "mult"),
     max.pos.scores=sapply(res, `[[`, "max.positive")
   ))
 }
 
 initializeMarkerList <- function(pos.markers.per.type, cm.norm, debug=F) {
-  marker.list <- lapply(pos.markers.per.type, function(x) list(expressed=list(), not_expressed=list()))
+  marker.list <- lapply(pos.markers.per.type, function(x) list(expressed=c(), not_expressed=c()))
   subtypes.left <- names(pos.markers.per.type)
   for (i in 1:length(subtypes.left)) {
     s.info <- prepareMarkerScoringInfo(marker.list, cm.norm)
