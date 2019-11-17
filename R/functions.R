@@ -81,7 +81,7 @@ diffuseGraph <- function(graph, scores, fading=10, fading.const=0.5, score.fixin
 #' @param graph cell graph from Seurat, Pagoda2 or some other tool. Can be either in igraph or adjacency matrix format.
 #'    Use `graph=NULL` to skip graph diffusion step and get raw score annotation (useful when debug marker genes).
 #' @param clf.data classification data from `getClassificationData`
-#' @param score.info cell type scores from `getCellTypeScoreInfo` function. Re-estimated if NULL
+#' @param score.info cell type scores from `getMarkerScoreInfo` function. Re-estimated if NULL
 #' @param clusters cluster assignment of data. Used to expand annotation on these clusters.
 #' @param verbose verbosity level (from 0 to 2)
 #' @inheritDotParams diffuseScorePerType
@@ -93,7 +93,7 @@ assignCellsByScores <- function(graph, clf.data, score.info=NULL, clusters=NULL,
   }
 
   if (is.null(score.info)) {
-    score.info <- lapply(clf.data$marker.list, getCellTypeScoreInfo, clf.data$cm)
+    score.info <- getMarkerScoreInfo(clf.data)
   }
 
   scores <- getMarkerScoresPerCellType(clf.data, score.info=score.info)
@@ -176,6 +176,17 @@ normalizeTfIdfWithFeatures <- function(cm, max.quantile=0.95, max.smooth=1e-10) 
 }
 
 #' @export
+getMarkerScoreInfo <- function(clf.data, ...) {
+  lapply(clf.data$marker.list, getCellTypeScoreInfo, clf.data$cm, ...)
+}
+
+#' @export
+mergeScoreInfos <- function(score.infos, verbose=F) {
+  names(score.infos[[1]]) %>% setNames(., .) %>%
+    plapply(function(tn) names(score.infos[[1]][[1]]) %>% setNames(., .) %>% lapply(function(sn)
+      lapply(score.infos, function(si) si[[tn]][[sn]]) %>% Reduce(c, .)), verbose=verbose)
+}
+
 getCellTypeScoreInfo <- function(markers, tf.idf, aggr=T) {
   if (length(markers$expressed) == 0) {
     if (aggr) {
@@ -252,7 +263,7 @@ getCellTypeScore <- function(markers, tf.idf, aggr=T, do.multiply=T, check.gene.
 #' Return initial scores of each cell type for each cell
 #'
 #' @param clf classification data from `getClassificationData`
-#' @param score.info pre-calculated score info from `getCellTypeScoreInfo`
+#' @param score.info pre-calculated score info from `getMarkerScoreInfo`
 #' @param aggr should individual gene scores be aggregated per cell type? If `FALSE`,
 #' returns list of data.frames, showing scores of each gene for each cell.
 #' Useful for debugging list of markers.
@@ -263,7 +274,7 @@ getCellTypeScore <- function(markers, tf.idf, aggr=T, do.multiply=T, check.gene.
 #' @export
 getMarkerScoresPerCellType <- function(clf, score.info=NULL, aggr=T) {
   if (is.null(score.info)) {
-    score.info <- lapply(clf$marker.list, getCellTypeScoreInfo, clf$cm, aggr=aggr)
+    score.info <- getMarkerScoreInfo(clf, aggr=aggr)
   }
 
   scores <- lapply(score.info, `[[`, "scores")

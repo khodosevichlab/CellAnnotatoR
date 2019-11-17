@@ -13,7 +13,7 @@ Use `graph=NULL` to skip graph diffusion step and get raw score annotation (usef
 
 \item{clf.data}{classification data from `getClassificationData`}
 
-\item{score.info}{cell type scores from `getCellTypeScoreInfo` function. Re-estimated if NULL}
+\item{score.info}{cell type scores from `getMarkerScoreInfo` function. Re-estimated if NULL}
 
 \item{clusters}{cluster assignment of data. Used to expand annotation on these clusters.}
 

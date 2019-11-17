@@ -120,18 +120,28 @@ plotTypeHierarchy <- function(classification.tree, layout="slanted", xlims=NULL,
     ggplot2::xlim(xlims)
 }
 
-plotUncertaintyPerCell <- function(embedding, uncertainty.info, palette=colorRampPalette(c("gray", "#ffeda0", "#fec44f", "#f03b20")), alpha=0.3, ...) {
-  names(uncertainty.info) %>% setNames(., .) %>% lapply(function(n)
+#' Uncertainty scatterplots per cell
+#' @param build.panel join plots to single panel
+#' @inheritDotParams conos::embeddingPlot
+#' @export
+plotUncertaintyPerCell <- function(embedding, uncertainty.info, palette=colorRampPalette(c("gray", "#ffeda0", "#fec44f", "#f03b20")), alpha=0.3, build.panel=T, n.col=length(uncertainty.info), n.row=NULL, ...) {
+  plts <- names(uncertainty.info) %>% setNames(., .) %>% lapply(function(n)
     conos::embeddingPlot(embedding, colors=uncertainty.info[[n]], alpha=alpha, title=n, palette=palette, ...))
+
+  if (!build.panel)
+    return(plts)
+
+  return(cowplot::plot_grid(plotlist=plts, ncol=n.col, nrow=n.row))
 }
 
-plotUncertaintyPerClust <- function(uncertainty.per.clust, annotation=NULL, clusters=NULL, ann.per.clust=NULL, threshold=0.5, text.angle=45, title=NULL) {
-  if (!is.null(ann.per.clust) && (is.null(annotation) != is.null(clusters)))
-    stop("Either both or none of annotation and clusters must be provided")
+#' @param text.angle angle of x-axis labels
+plotOneUncertaintyPerClust <- function(uncertainty.per.clust, clusters, annotation=NULL, ann.per.clust=NULL, threshold=0.5, text.angle=45, title=NULL) {
+  if (is.null(ann.per.clust) && is.null(annotation))
+    stop("Either annotation or ann.per.clust must be provided")
 
   p.df <- tibble::enframe(uncertainty.per.clust, name="Cluster", value="Uncertainty")
   p.aes <- ggplot2::aes()
-  if (!is.null(annotation)) {
+  if (is.null(ann.per.clust)) {
     ann.per.clust <- getAnnotationPerCluster(annotation, clusters)
   }
 
@@ -150,4 +160,29 @@ plotUncertaintyPerClust <- function(uncertainty.per.clust, annotation=NULL, clus
   }
 
   return(gg)
+}
+
+#' Uncertainty barplots per cluster
+#' @inheritParams plotOneUncertaintyPerClust
+#' @inheritDotParams plotOneUncertaintyPerClust text.angle
+#' @export
+plotUncertaintyPerClust <- function(uncertainty.per.clust, clusters, annotation=NULL, ann.per.clust=NULL,
+                                    thresholds=c(coverage=0.5, negative=0.5, positive=0.75), ...) {
+  names(uncertainty.per.clust) %>% setNames(., .) %>% lapply(function(n)
+    plotOneUncertaintyPerClust(uncertainty.per.clust[[n]], annotation=annotation, clusters=clusters,
+                               ann.per.clust=ann.per.clust, threshold=thresholds[[n]], title=n, ...))
+}
+
+plotAssignmentConfusion <- function(scores, annotation=NULL, clusters=annotation, ann.per.clust=NULL) {
+  if (!is.null(annotation)) {
+    ann.per.clust <- getAnnotationPerCluster(annotation, clusters)
+  } else if (is.null(ann.per.clust) || is.null(clusters)) {
+    stop("Either annotation or both clusters and ann.per.clust must be provided")
+  }
+
+  scores %>% dplyr::group_by(Cluster=clusters[rownames(.)]) %>%
+    dplyr::summarise_all(dplyr::funs(mean)) %>%
+    data.frame(row.names=.$Cluster, check.names=F) %>% .[,2:ncol(.)] %>%
+    .[names(sort(ann.per.clust)), sort(colnames(.))] %>%
+    pheatmap::pheatmap(cluster_rows=F, cluster_cols=F, annotation_row=data.frame(ann.per.clust))
 }
