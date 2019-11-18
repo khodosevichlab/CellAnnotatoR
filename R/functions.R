@@ -87,7 +87,7 @@ diffuseGraph <- function(graph, scores, fading=10, fading.const=0.5, score.fixin
 #' @inheritDotParams diffuseScorePerType
 #'
 #' @export
-assignCellsByScores <- function(graph, clf.data, score.info=NULL, clusters=NULL, verbose=0, ...) {
+assignCellsByScores <- function(graph, clf.data, score.info=NULL, clusters=NULL, verbose=0, uncertainty.thresholds=c(coverage=0.5, negative=0.5, positive=0.75), ...) {
   if (!is.null(clusters)) {
     clusters <- as.factor(clusters)
   }
@@ -140,7 +140,7 @@ assignCellsByScores <- function(graph, clf.data, score.info=NULL, clusters=NULL,
 
     res.ann <- lapply(scores.per.type, annotationFromScores, clusters) %>% Reduce(c, .)
     res.ann.filt <- filterAnnotationByUncertainty(res.ann, scores.posterior[,possible.ann.levels], score.info=score.info,
-                                                  cur.types=unique(res.ann), clusters=clusters)
+                                                  cur.types=unique(res.ann), clusters=clusters, thresholds=uncertainty.thresholds)
 
     c.ann[names(res.ann)] <- res.ann
     c.ann.filt[names(res.ann.filt)] %<>% is.na() %>% ifelse(NA, res.ann.filt)
@@ -180,11 +180,25 @@ getMarkerScoreInfo <- function(clf.data, ...) {
   lapply(clf.data$marker.list, getCellTypeScoreInfo, clf.data$cm, ...)
 }
 
+mergeScores <- function(score.name, scores, aggr.func=c) {
+  names(scores[[1]][[score.name]]) %>% setNames(., .) %>% lapply(function(n)
+    lapply(scores, `[[`, c(score.name, n)) %>% Reduce(aggr.func, .))
+}
+
 #' @export
 mergeScoreInfos <- function(score.infos, verbose=F) {
-  names(score.infos[[1]]) %>% setNames(., .) %>%
-    plapply(function(tn) names(score.infos[[1]][[1]]) %>% setNames(., .) %>% lapply(function(sn)
-      lapply(score.infos, function(si) si[[tn]][[sn]]) %>% Reduce(c, .)), verbose=verbose)
+  names(score.infos[[1]]) %>% setNames(., .) %>% lapply(mergeScores, score.infos)
+  # names(score.infos[[1]]) %>% setNames(., .) %>%
+  #   plapply(function(tn) names(score.infos[[1]][[1]]) %>% setNames(., .) %>% lapply(function(sn)
+  #     lapply(score.infos, function(si) si[[tn]][[sn]]) %>% Reduce(c, .)), verbose=verbose)
+}
+
+mergeAnnotationInfos <- function(ann.infos) {
+  return(list(
+    annotation=mergeScores("annotation", ann.infos),
+    scores=mergeScores("scores", ann.infos, aggr.func=rbind),
+    annotation.filt=mergeScores("annotation.filt", ann.infos)
+  ))
 }
 
 getCellTypeScoreInfo <- function(markers, tf.idf, aggr=T) {
@@ -260,6 +274,12 @@ getCellTypeScore <- function(markers, tf.idf, aggr=T, do.multiply=T, check.gene.
   return(scores * score.mult)
 }
 
+normalizeScores <- function(scores, min.val=1e-10) {
+  scores[rowSums(scores) < 1e-10,] <- 1
+  scores  %<>% `/`(rowSums(.))
+  return(scores)
+}
+
 #' Return initial scores of each cell type for each cell
 #'
 #' @param clf classification data from `getClassificationData`
@@ -285,8 +305,7 @@ getMarkerScoresPerCellType <- function(clf, score.info=NULL, aggr=T) {
   scores %<>% as.data.frame(optional=T)
 
   for (nodes in split(clf.nodes$Node, clf.nodes$PathLen)) {
-    scores[rowSums(scores[, nodes]) < 1e-10, nodes] <- 1
-    scores[, nodes]  %<>% `/`(rowSums(.))
+    scores[, nodes]  %<>% normalizeScores()
   }
 
   return(scores)

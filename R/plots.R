@@ -173,6 +173,7 @@ plotUncertaintyPerClust <- function(uncertainty.per.clust, clusters, annotation=
                                ann.per.clust=ann.per.clust, threshold=thresholds[[n]], title=n, ...))
 }
 
+#' @export
 plotAssignmentConfusion <- function(scores, annotation=NULL, clusters=annotation, ann.per.clust=NULL) {
   if (!is.null(annotation)) {
     ann.per.clust <- getAnnotationPerCluster(annotation, clusters)

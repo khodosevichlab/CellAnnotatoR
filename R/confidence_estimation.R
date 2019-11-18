@@ -3,9 +3,8 @@ getAnnotationConfidence <- function(annotation, scores) {
     setNames(rownames(scores))
 }
 
-#' @export
-scoreUncertaintyPerCell <- function(annotation, scores.norm, score.info, cur.types=unique(annotation), coverage.max.quantile=0.75) {
-  positive <- getAnnotationConfidence(annotation, scores.norm)
+scorePerCellUncertainty <- function(annotation, scores.norm, score.info, cur.types=unique(annotation), coverage.max.quantile=0.75) {
+  positive <- getAnnotationConfidence(annotation, scores.norm[names(annotation),])
 
   cbs.per.type <- split(names(annotation), annotation)
   negative.mult <- cur.types %>%
@@ -23,8 +22,15 @@ scoreUncertaintyPerCell <- function(annotation, scores.norm, score.info, cur.typ
   ))
 }
 
+#' @inheritDotParams scorePerCellUncertainty cur.types coverage.max.quantile
 #' @export
-scoreUncertaintyPerCluster <- function(unc.per.cell, clusters) {
+scoreCellUncertaintyPerLevel <- function(ann.info.per.level, score.info, verbose=F, ...) {
+  names(ann.info.per.level[[1]]) %>% setNames(., .) %>% plapply(function(n)
+    scorePerCellUncertainty(ann.info.per.level$annotation[[n]], ann.info.per.level$scores[[n]], score.info, ...),
+    verbose=verbose)
+}
+
+scorePerClusterUncertainty <- function(unc.per.cell, clusters) {
   return(unc.per.cell %$% list(
     coverage = coverage %>% split(clusters[names(.)]) %>% sapply(function(x) mean(x > 0.99)),
     positive = positive %>% split(clusters[names(.)]) %>% sapply(mean),
@@ -32,12 +38,16 @@ scoreUncertaintyPerCluster <- function(unc.per.cell, clusters) {
   ))
 }
 
+scoreClusterUncertaintyPerLevel <- function(cell.uncertainty.per.level, clusters) {
+  lapply(cell.uncertainty.per.level, scorePerClusterUncertainty, clusters)
+}
+
 filterAnnotationByUncertainty <- function(annotation, scores, score.info, cur.types=unique(annotation), clusters=NULL,
                                           thresholds=c(coverage=0.5, negative=0.5, positive=0.75)) {
-  unc.per.cell <- scoreUncertaintyPerCell(annotation, scores, score.info, cur.types=cur.types)
+  unc.per.cell <- scorePerCellUncertainty(annotation, scores, score.info, cur.types=cur.types)
 
   if (!is.null(clusters)) {
-    unc.per.clust <- scoreUncertaintyPerCluster(unc.per.cell, clusters)
+    unc.per.clust <- scorePerClusterUncertainty(unc.per.cell, clusters)
     for (n in names(thresholds)) {
       annotation[unc.per.clust[[n]][as.character(clusters[names(annotation)])] > thresholds[[n]]] <- NA
     }
