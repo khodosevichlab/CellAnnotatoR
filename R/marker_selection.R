@@ -179,10 +179,13 @@ getTopNegativeGenes <- function(pos.gene, cell.type, cm.norm, annotation, marker
   neg.scores <- estimateNewNegativeScores(cm.norm.neg, c.max.scores, s.info$neg.scores[,cell.type]) %>%
     `dimnames<-`(dimnames(cm.norm.neg))
 
-  neg.score.base <- ((1 - neg.scores) * pos.score.changes[,pos.gene]) %>%
-    aggregateScoreChangePerGene(annotation, "both", cell.type) %>% .[which.max(.$Score),]
+  neg.score.info <- ((1 - neg.scores) * pos.score.changes[,pos.gene]) %>%
+    aggregateScoreChangePerGene(annotation, "both", cell.type)
+  neg.score.base <- neg.score.info %>% .[which.max(.$Score),]
+  top.neg.ids <- neg.score.info %$% Gene[order(Score, decreasing=T)[1:n.neg.genes]] %>%
+    match(colnames(neg.scores))
 
-  d.score.per.neg <- lapply(1:n.neg.genes, function(base.id)
+  d.score.per.neg <- lapply(top.neg.ids, function(base.id)
     1:ncol(neg.scores) %>%
       lapply(function(i) (1 - pmax(neg.scores[,base.id], neg.scores[,i]))) %>%
       Reduce(cbind, .) %>% `colnames<-`(colnames(neg.scores)) %>%
@@ -190,7 +193,7 @@ getTopNegativeGenes <- function(pos.gene, cell.type, cm.norm, annotation, marker
 
   res <- lapply(d.score.per.neg, aggregateScoreChangePerGene, annotation, "both", cell.type) %>%
     lapply(`[`,1,) %>% Reduce(rbind, .) %>% dplyr::rename(NGene1=Gene) %>%
-    dplyr::mutate(NGene2=colnames(neg.scores)[1:n.neg.genes]) %>%  .[which.max(.$Score),]
+    dplyr::mutate(NGene2=colnames(neg.scores)[top.neg.ids]) %>%  .[which.max(.$Score),]
 
   if ((res$Score - neg.score.base$Score) / abs(neg.score.base$Score) < score.change.threshold) {
     res <- neg.score.base %>% rename(NGene1=Gene) %>% dplyr::mutate(NGene2=NA)
