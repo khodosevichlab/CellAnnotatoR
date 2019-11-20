@@ -1,10 +1,10 @@
 aggregateScoreChangePerGene <- function(d.scores, annotation, marker.type, cell.type, target.type=NULL, balance.cell.types=T, self.mult=1) {
   aggr.func <- if (balance.cell.types) Matrix::colMeans else Matrix::colSums
 
-  cbs.per.type <- split(names(annotation), annotation)
-  scores.per.type <- cbs.per.type %>%
-    lapply(function(cbs) aggr.func(d.scores[cbs,, drop=F])) %>%
-    Reduce(cbind, .) %>% `colnames<-`(names(cbs.per.type)) %>% `*`(-1)
+  cids.per.type <- names(annotation) %>% match(rownames(d.scores)) %>% split(annotation)
+  scores.per.type <- cids.per.type %>%
+    lapply(function(cids) aggr.func(d.scores[cids,, drop=F])) %>%
+    Reduce(cbind, .) %>% `colnames<-`(names(cids.per.type)) %>% `*`(-1)
   # scores.per.type[,cell.type] %<>% `*`(-self.mult)
   scores.per.type[,cell.type] %<>% `*`(-1)
   if (!is.null(target.type)) {
@@ -185,11 +185,7 @@ getTopNegativeGenes <- function(pos.gene, cell.type, cm.norm, annotation, marker
   top.neg.ids <- neg.score.info %$% Gene[order(Score, decreasing=T)[1:n.neg.genes]] %>%
     match(colnames(neg.scores))
 
-  d.score.per.neg <- lapply(top.neg.ids, function(base.id)
-    1:ncol(neg.scores) %>%
-      lapply(function(i) (1 - pmax(neg.scores[,base.id], neg.scores[,i]))) %>%
-      Reduce(cbind, .) %>% `colnames<-`(colnames(neg.scores)) %>%
-      `*`(pos.score.changes[,pos.gene]))
+  d.score.per.neg <- lapply(top.neg.ids, estimatePariwiseNegativeScoreChange, neg.scores, pos.score.changes[,pos.gene])
 
   res <- lapply(d.score.per.neg, aggregateScoreChangePerGene, annotation, "both", cell.type) %>%
     lapply(`[`,1,) %>% Reduce(rbind, .) %>% dplyr::rename(NGene1=Gene) %>%

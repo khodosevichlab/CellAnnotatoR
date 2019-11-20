@@ -5,6 +5,10 @@ estimateNewNegativeScores <- function(expression, max_scores, neg_scores) {
     .Call(`_CellAnnotatoR_estimateNewNegativeScores`, expression, max_scores, neg_scores)
 }
 
+estimatePariwiseNegativeScoreChange <- function(base_id, neg_scores, pos_scores) {
+    .Call(`_CellAnnotatoR_estimatePariwiseNegativeScoreChange`, base_id, neg_scores, pos_scores)
+}
+
 estimateDNegativeScores <- function(d_scores, pos_scores, sum_scores, is_positive) {
     .Call(`_CellAnnotatoR_estimateDNegativeScores`, d_scores, pos_scores, sum_scores, is_positive)
 }

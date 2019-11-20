@@ -18,6 +18,19 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// estimatePariwiseNegativeScoreChange
+NumericMatrix estimatePariwiseNegativeScoreChange(int base_id, NumericMatrix neg_scores, const std::vector<double>& pos_scores);
+RcppExport SEXP _CellAnnotatoR_estimatePariwiseNegativeScoreChange(SEXP base_idSEXP, SEXP neg_scoresSEXP, SEXP pos_scoresSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< int >::type base_id(base_idSEXP);
+    Rcpp::traits::input_parameter< NumericMatrix >::type neg_scores(neg_scoresSEXP);
+    Rcpp::traits::input_parameter< const std::vector<double>& >::type pos_scores(pos_scoresSEXP);
+    rcpp_result_gen = Rcpp::wrap(estimatePariwiseNegativeScoreChange(base_id, neg_scores, pos_scores));
+    return rcpp_result_gen;
+END_RCPP
+}
 // estimateDNegativeScores
 std::vector<double> estimateDNegativeScores(NumericMatrix d_scores, const std::vector<double>& pos_scores, const std::vector<double>& sum_scores, const std::vector<bool> is_positive);
 RcppExport SEXP _CellAnnotatoR_estimateDNegativeScores(SEXP d_scoresSEXP, SEXP pos_scoresSEXP, SEXP sum_scoresSEXP, SEXP is_positiveSEXP) {
@@ -35,6 +48,7 @@ END_RCPP
 
 static const R_CallMethodDef CallEntries[] = {
     {"_CellAnnotatoR_estimateNewNegativeScores", (DL_FUNC) &_CellAnnotatoR_estimateNewNegativeScores, 3},
+    {"_CellAnnotatoR_estimatePariwiseNegativeScoreChange", (DL_FUNC) &_CellAnnotatoR_estimatePariwiseNegativeScoreChange, 3},
     {"_CellAnnotatoR_estimateDNegativeScores", (DL_FUNC) &_CellAnnotatoR_estimateDNegativeScores, 4},
     {NULL, NULL, 0}
 };

@@ -32,6 +32,27 @@ NumericMatrix estimateNewNegativeScores(NumericMatrix expression, const std::vec
 }
 
 // [[Rcpp::export]]
+NumericMatrix estimatePariwiseNegativeScoreChange(int base_id, NumericMatrix neg_scores, const std::vector<double> &pos_scores) {
+  base_id -= 1;
+  if (neg_scores.nrow() != pos_scores.size())
+    stop("neg_scores and pos_scores must have the same length");
+
+  if (base_id < 0 || base_id >= neg_scores.ncol())
+    stop("base_id is out of bounds: " + std::to_string(base_id));
+
+  NumericMatrix score_change(Rcpp::clone(neg_scores));
+  NumericVector v = neg_scores(_, base_id);
+  std::vector<double> base_neg_scores = as<std::vector<double>>(v);
+  for (int j = 0; j < score_change.ncol(); ++j) {
+    for (int i = 0; i < score_change.nrow(); ++i) {
+      score_change(i, j) = (1 - std::max(score_change(i, j), base_neg_scores[i])) * pos_scores[i];
+    }
+  }
+
+  return(score_change);
+}
+
+// [[Rcpp::export]]
 std::vector<double> estimateDNegativeScores(NumericMatrix d_scores, const std::vector<double> &pos_scores,
                                             const std::vector<double> &sum_scores, const std::vector<bool> is_positive) {
   if (sum_scores.size() != d_scores.nrow() || pos_scores.size() != d_scores.nrow() || is_positive.size() != d_scores.nrow())
