@@ -1,9 +1,17 @@
+arrangePlots <- function(plot.list, build.panel, n.col=NULL, n.row=NULL) {
+  if (build.panel)
+    return(cowplot::plot_grid(plotlist=plot.list, ncol=n.col, nrow=n.row))
+
+  return(plot.list)
+}
+
 #' @export
-plotAssignmentScores <- function(embedding, scores, classification.tree, parent.node="root", ...) {
+plotAssignmentScores <- function(embedding, scores, classification.tree, parent.node="root", build.panel=T, n.col=NULL, n.row=NULL, ...) {
   classificationTreeToDf(classification.tree) %>%
     dplyr::filter(Parent == parent.node) %>% .$Node %>%
     lapply(function(n) conos:::embeddingPlot(embedding, colors=setNames(scores[, n], rownames(scores)),
-                                             title=n, color.range=c(0, 1), ...))
+                                             title=n, color.range=c(0, 1), ...)) %>%
+    arrangePlots(build.panel=build.panel, n.row=n.row, n.col=n.col)
 }
 
 plotGarnettAssignemnts <- function(embedding, assignment, plot.ambig=T, show.legend=T, mark.groups=F, ...) {
@@ -35,7 +43,10 @@ plotTypeMarkers <- function(embedding, count.matrix, cell.type, marker.list, sho
 
 #' @export
 plotSubtypeMarkers <- function(embedding, count.matrix, parent.type="root", clf.data=NULL, clf.tree=NULL, marker.list=NULL,
-                               show.legend=F, max.depth=NULL, drop.missing=T, build.panel=T, n.col=NULL, n.row=NULL, ...) {
+                               show.legend=F, max.depth=NULL, drop.missing=T, build.panel=T, n.col=NULL, n.row=NULL, marker.type=c("expressed", "not_expressed"), ...) {
+  if (length(setdiff(marker.type, c("expressed", "not_expressed"))) > 0)
+    stop("Unknown marker.type")
+
   if (is.null(clf.data) && (is.null(clf.tree) || is.null(marker.list)))
     stop("Either clf.data or both clf.tree and marker.list must be provided")
 
@@ -47,12 +58,16 @@ plotSubtypeMarkers <- function(embedding, count.matrix, parent.type="root", clf.
   markers <- list()
 
   for (type in getAllSubtypes(parent.type, clf.tree, max.depth=max.depth)) {
-    for (g in marker.list[[type]]$expressed) {
-      markers[[g]] %<>% c(paste0(type, "(+)"))
+    if ("expressed" %in% marker.type) {
+      for (g in marker.list[[type]]$expressed) {
+        markers[[g]] %<>% c(paste0(type, "(+)"))
+      }
     }
 
-    for (g in marker.list[[type]]$not_expressed) {
-      markers[[g]] %<>% c(paste0(type, "(-)"))
+    if ("not_expressed" %in% marker.type) {
+      for (g in marker.list[[type]]$not_expressed) {
+        markers[[g]] %<>% c(paste0(type, "(-)"))
+      }
     }
   }
 
@@ -67,10 +82,7 @@ plotSubtypeMarkers <- function(embedding, count.matrix, parent.type="root", clf.
   },names(markers), titles, SIMPLIFY=F
   )
 
-  if (!build.panel)
-    return(plots)
-
-  return(cowplot::plot_grid(plotlist=plots, ncol=n.col, nrow=n.row))
+  return(arrangePlots(plots, build.panel=build.panel, n.row=n.row, n.col=n.col))
 }
 
 #' @export

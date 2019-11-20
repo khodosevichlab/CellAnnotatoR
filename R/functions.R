@@ -313,11 +313,35 @@ getMarkerScoresPerCellType <- function(clf, score.info=NULL, aggr=T) {
 
 ## Utils
 
+appendHierarchyBranch <- function(branch, parent.name) {
+  is.leaf <- (sapply(branch, is.character) & (sapply(branch, length) == 1))
+  if (any((sapply(names(branch), nchar) > 0) != !is.leaf))
+    stop("Can't parse ", parent.name, " branch: only lists must have names")
+
+  current.nodes <- lapply(c(branch[is.leaf], names(branch[!is.leaf])), function(x)
+    list(list(expressed=c(), not_expressed=c(), parent=parent.name)) %>% setNames(x))
+
+  sub.branches <- lapply(names(branch)[!is.leaf], function(n) appendHierarchyBranch(branch[[n]], n))
+  return(c(current.nodes, unlist(sub.branches, recursive=F)))
+}
+
+getAnnotationPerParent <- function(clf.tree, annotation) {
+  classificationTreeToDf(clf.tree) %>% split(.$Parent) %>% lapply(function(df)
+    mergeAnnotationToLevel(df$PathLen[1], annotation, clf.tree) %>% .[. %in% df$Node])
+}
+
+#' @export
+hierarchyToClassificationTree <- function(hierarchy) {appendHierarchyBranch(hierarchy, "root") %>% unlist(recursive=F) %>% createClassificationTree()}
+
 mergeAnnotationToLevel <- function(level, annotation, classification.tree) {
   parent.types <- classificationTreeToDf(classification.tree) %$% Node[PathLen == level] %>% unique()
   if (length(parent.types) == 0) {
     warning("Nothing to merge at level ", level)
     return(annotation)
+  }
+
+  if (is.factor(annotation)) {
+    annotation <- setNames(as.character(annotation), names(annotation))
   }
 
   type.map <- unique(annotation) %>% setNames(., .)

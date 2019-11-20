@@ -136,7 +136,9 @@ updateMarkersPerType <- function(markers.per.type, marker.list=NULL, marker.info
   return(markers.per.type)
 }
 
-preSelectMarkersForType <- function(de.df, min.pos.markers=5, max.pos.markers=50, min.pos.specificity=0.2, min.pos.expression.frac=0.1,
+preSelectMarkersForType <- function(de.df, min.pos.markers=5, max.pos.markers=100, min.pos.specificity=0.2, min.pos.expression.frac=0.1,
+                                    min.pos.markers.soft=as.integer(round(mean(c(min.pos.markers, max.pos.markers)))),
+                                    min.pos.specificity.soft=0.75, min.pos.expression.frac.soft=0.25,
                                     pos.expression.frac.weight=0.2, max.neg.expression.frac=0.1) {
   de.pos <- de.df[de.df$Z > 0, ]
   if (sum(de.pos$Specificity > min.pos.specificity) < min.pos.markers) {
@@ -146,9 +148,17 @@ preSelectMarkersForType <- function(de.df, min.pos.markers=5, max.pos.markers=50
     if (sum(de.pos$ExpressionFraction > min.pos.expression.frac) < min.pos.markers) {
       pos.markers <- de.pos$Gene[order(de.pos$ExpressionFraction, decreasing=T)[1:min.pos.markers]]
     } else {
-      pos.markers <- de.pos %>% .[.$ExpressionFraction > min.pos.expression.frac,] %>%
-        .[order(.$Specificity + .$ExpressionFraction * pos.expression.frac.weight, decreasing=T),] %>% .$Gene %>%
-        .[1:min(length(.), max.pos.markers)]
+      de.pos %<>% .[.$ExpressionFraction > min.pos.expression.frac,] %>%
+        .[order(.$Specificity + .$ExpressionFraction * pos.expression.frac.weight, decreasing=T),]
+
+      soft.mask <- (de.pos$ExpressionFraction > min.pos.expression.frac.soft) & (de.pos$Specificity > min.pos.specificity.soft)
+      if (sum(soft.mask) > min.pos.markers.soft) {
+        de.pos %<>% .[soft.mask, ]
+      } else {
+        de.pos %<>% .[1:min(nrow(.), min.pos.markers.soft), ]
+      }
+
+      pos.markers <- de.pos %>% .$Gene %>% .[1:min(length(.), max.pos.markers)]
     }
   }
   # Negative: ExpressionFraction < 0.1 && Z < 0 && top by specificity (or > 0.95)
@@ -179,10 +189,13 @@ getTopNegativeGenes <- function(pos.gene, cell.type, cm.norm, annotation, marker
   neg.scores <- estimateNewNegativeScores(cm.norm.neg, c.max.scores, s.info$neg.scores[,cell.type]) %>%
     `dimnames<-`(dimnames(cm.norm.neg))
 
+  if (ncol(neg.scores) == 0)
+    return(NULL)
+
   neg.score.info <- ((1 - neg.scores) * pos.score.changes[,pos.gene]) %>%
     aggregateScoreChangePerGene(annotation, "both", cell.type)
   neg.score.base <- neg.score.info %>% .[which.max(.$Score),]
-  top.neg.ids <- neg.score.info %$% Gene[order(Score, decreasing=T)[1:n.neg.genes]] %>%
+  top.neg.ids <- neg.score.info %$% Gene[order(Score, decreasing=T)[1:min(n.neg.genes, nrow(.))]] %>%
     match(colnames(neg.scores))
 
   d.score.per.neg <- lapply(top.neg.ids, estimatePariwiseNegativeScoreChange, neg.scores, pos.score.changes[,pos.gene])
@@ -211,7 +224,9 @@ getNextMarkers <- function(cell.type, cm.norm, annotation, marker.list, markers.
   res.score <- plapply(top.pos.genes, getTopNegativeGenes, cell.type, cm.norm, annotation, markers.per.type, s.info,
                        pos.score.changes, n.neg.genes=n.neg.genes, score.change.threshold=score.change.threshold,
                        verbose=verbose, n.cores=max(min(n.cores, n.pos.genes), 1)) %>%
-    Reduce(rbind, .) %>% .[which.max(.$Score),]
+    .[!sapply(., is.null)]
+
+  res.score <- if (length(res.score) > 0) {Reduce(rbind, res.score) %>% .[which.max(.$Score),]} else pos.score
 
   if (verbose) {
     message("Neg. score: ", round(res.score$Score, 3), ", Pos. score: ", round(pos.score$Score, 3))
@@ -269,8 +284,14 @@ filterMarkerListByScore <- function(marker.list, cm.norm, annotation, verbose=F,
   return(ml.res)
 }
 
-selectMarkersPerType <- function(cm.norm, marker.list, annotation, markers.per.type, max.iters=ncol(cm.norm), max.uncertainty=0.25, verbose=0, max.pos.markers=10, log.step=1, n.cores=1, refinement.period=10, ret.all=T) {
+selectMarkersPerType <- function(cm.norm, annotation, markers.per.type, marker.list=emptyMarkerList(names(markers.per.type$positive)), max.iters=ncol(cm.norm),
+                                 max.uncertainty=0.25, verbose=0, min.pos.markers=1, max.pos.markers=10, log.step=1, n.cores=1, refinement.period=10, ret.all=T, optimization.target="mean") {
+  if (!(optimization.target %in% c("max", "mean")))
+    stop("Unknown optimization.target: ", optimization.target)
+
+  cm.norm %<>% .[names(annotation), unique(unlist(markers.per.type))] %>% as.matrix()
   mean.unc.per.type <- (1 - getMeanConfidencePerType(marker.list, cm.norm, annotation))
+  did.refinement <- F
   for (i in 1:max.iters) {
     n.markers.per.cell <- sapply(marker.list, function(x) length(x$expressed))
     if (all(n.markers.per.cell >= max.pos.markers))
@@ -288,26 +309,29 @@ selectMarkersPerType <- function(cm.norm, marker.list, annotation, markers.per.t
     markers.per.type %<>% updateMarkersPerType(marker.list=setNames(list(m.update), cell.type))
 
     mean.unc.per.type.new <- (1 - getMeanConfidencePerType(marker.list.new, cm.norm, annotation))
-    # if (mean.unc.per.type.new[cell.type] < mean.unc.per.type[cell.type]) {
-    if ((mean(mean.unc.per.type.new) < mean(mean.unc.per.type)) || (max(mean.unc.per.type.new) < max(mean.unc.per.type))) {
+    if ((optimization.target == "mean") && (mean(mean.unc.per.type.new) < mean(mean.unc.per.type)) ||
+        (optimization.target == "max") && (max(mean.unc.per.type.new) < max(mean.unc.per.type))) {
       mean.unc.per.type <- mean.unc.per.type.new
       marker.list <- marker.list.new
+      did.refinement <- F
     }
 
     if (verbose && (log.step > 0) && (i %% log.step == 0)) {
-      message("Iteration ", i, ". Max uncertainty: ", round(max(mean.unc.per.type), 3), ", mean uncertainty: ", round(mean(mean.unc.per.type), 3))
+      message("Iteration ", i, ". Max uncertainty: ", round(max(mean.unc.per.type), 3), ", mean uncertainty: ", round(mean(mean.unc.per.type), 3),
+              ". Target type: ", cell.type, ", gene: ", m.update$expressed)
     }
 
-    if (max(mean.unc.per.type) < max.uncertainty)
+    if ((max(mean.unc.per.type) < max.uncertainty) && (sapply(marker.list, function(x) length(x$expressed)) >= min.pos.markers))
       break
 
-    if ((refinement.period > 0) && (i %% refinement.period == 0)) {
+    if ((refinement.period > 0) && (i %% refinement.period == 0) && !did.refinement) {
       if (verbose) message("Refine markers...")
       marker.list %<>% filterMarkerListByScore(cm.norm, annotation, verbose=(verbose > 1), n.cores=n.cores)
+      did.refinement <- T
     }
   }
 
-  if (refinement.period != 0) {
+  if ((refinement.period != 0) && !did.refinement) {
     if (verbose) message("Refine markers...")
     marker.list %<>% filterMarkerListByScore(cm.norm, annotation, verbose=(verbose > 1), n.cores=n.cores)
   }
@@ -318,5 +342,30 @@ selectMarkersPerType <- function(cm.norm, marker.list, annotation, markers.per.t
   return(marker.list)
 }
 
+prepareDeDf <- function(df, cell.type, annotation, cm.raw, low.expression.threshold=1) {
+  if (!("Z" %in% colnames(df)))
+    stop("All DE data frames must have 'Z' column")
+
+  if (!("Gene" %in% colnames(df))) {
+    if (is.null(rownames(df)))
+      stop("All DE data frames must have either rownames or 'Gene' column")
+
+    df %<>% tibble::as_tibble(rownames="Gene")
+  }
+
+  return(conos:::appendSpecificityMetricsToDE(df, annotation, cell.type, cm.raw, low.expression.threshold=low.expression.threshold))
+}
+
+#' @export
+prepareDeInfo <- function(de.info, annotation, cm.raw, ..., n.cores=1, verbose=F) {
+  res <- names(de.info) %>% setNames(., .) %>%
+    plapply(function(n) prepareDeDf(de.info[[n]], n, annotation, cm.raw, ...), n.cores=n.cores, verbose=verbose)
+  return(res)
+}
+
+
+emptyMarkerList <- function(cell.types) {
+  return(cell.types %>% setNames(., .) %>% lapply(function(x) list(expressed=c(), not_expressed=c())))
+}
 
 ## can add small bonus for negative markers, which target a log of negative cells even though there are no positive expression yet
