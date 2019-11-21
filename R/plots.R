@@ -197,6 +197,7 @@ plotAssignmentConfusion <- function(scores, annotation=NULL, clusters=annotation
     pheatmap::pheatmap(cluster_rows=F, cluster_cols=F, annotation_row=data.frame(ann.per.clust))
 }
 
+#' @export
 plotExpressionViolinMap <- function(markers, count.matrix, annotation, x.text.angle=45, gene.order=NULL) {
   p.df <- lapply(markers, function(g)
     data.frame(Expr=count.matrix[names(annotation),g], Type=annotation, Gene=g)) %>%

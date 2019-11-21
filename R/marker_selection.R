@@ -136,10 +136,19 @@ updateMarkersPerType <- function(markers.per.type, marker.list=NULL, marker.info
   return(markers.per.type)
 }
 
-preSelectMarkersForType <- function(de.df, min.pos.markers=5, max.pos.markers=100, min.pos.specificity=0.2, min.pos.expression.frac=0.1,
+preSelectMarkersForType <- function(de.df, whitelist=NULL, blacklist=NULL, min.pos.markers=5, max.pos.markers=100,
+                                    min.pos.specificity=0.2, min.pos.expression.frac=0.1,
                                     min.pos.markers.soft=as.integer(round(mean(c(min.pos.markers, max.pos.markers)))),
                                     min.pos.specificity.soft=0.75, min.pos.expression.frac.soft=0.25,
                                     pos.expression.frac.weight=0.2, max.neg.expression.frac=0.1) {
+  if (!is.null(whitelist)) {
+    de.df %<>% dplyr::filter(Gene %in% whitelist)
+  }
+
+  if (!is.null(blacklist)) {
+    de.df %<>% dplyr::filter(!(Gene %in% blacklist))
+  }
+
   de.pos <- de.df[de.df$Z > 0, ]
   if (sum(de.pos$Specificity > min.pos.specificity) < min.pos.markers) {
     pos.markers <- de.pos$Gene[order(de.pos$Specificity, decreasing=T)[1:min.pos.markers]]
@@ -284,6 +293,7 @@ filterMarkerListByScore <- function(marker.list, cm.norm, annotation, verbose=F,
   return(ml.res)
 }
 
+#' @export
 selectMarkersPerType <- function(cm.norm, annotation, markers.per.type, marker.list=emptyMarkerList(names(markers.per.type$positive)), max.iters=ncol(cm.norm), parent="root",
                                  max.uncertainty=0.25, verbose=0, min.pos.markers=1, max.pos.markers=10, log.step=1, n.cores=1, refinement.period=10, ret.all=F, optimization.target="mean") {
   if (!(optimization.target %in% c("max", "mean")))

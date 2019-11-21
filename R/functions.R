@@ -325,6 +325,7 @@ appendHierarchyBranch <- function(branch, parent.name) {
   return(c(current.nodes, unlist(sub.branches, recursive=F)))
 }
 
+#' @export
 getAnnotationPerParent <- function(clf.tree, annotation) {
   classificationTreeToDf(clf.tree) %>% split(.$Parent) %>% lapply(function(df)
     mergeAnnotationToLevel(df$PathLen[1], annotation, clf.tree) %>% .[. %in% df$Node])
