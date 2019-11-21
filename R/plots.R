@@ -86,7 +86,7 @@ plotSubtypeMarkers <- function(embedding, count.matrix, parent.type="root", clf.
 }
 
 #' @export
-plotAnnotationByLevels <- function(embedding, annotation.by.level, clusters=NULL, ...) {
+plotAnnotationByLevels <- function(embedding, annotation.by.level, clusters=NULL, build.panel=T, n.col=NULL, n.row=NULL, ...) {
   res <- lapply(1:length(annotation.by.level),
                 function(i) conos:::embeddingPlot(embedding, groups=annotation.by.level[[i]], title=paste("Level", i), ...))
 
@@ -94,7 +94,7 @@ plotAnnotationByLevels <- function(embedding, annotation.by.level, clusters=NULL
     res[[length(res) + 1]] <- conos:::embeddingPlot(embedding, groups=clusters, title="Clustering", ...)
   }
 
-  return(res)
+  return(arrangePlots(res, build.panel=build.panel, n.row=n.row, n.col=n.col))
 }
 
 plotConfidenceByLevels <- function(embedding, annotation.by.level, scores, show.legend=T, ...) {
@@ -136,18 +136,16 @@ plotTypeHierarchy <- function(classification.tree, layout="slanted", xlims=NULL,
 #' @param build.panel join plots to single panel
 #' @inheritDotParams conos::embeddingPlot
 #' @export
-plotUncertaintyPerCell <- function(embedding, uncertainty.info, palette=colorRampPalette(c("gray", "#ffeda0", "#fec44f", "#f03b20")), alpha=0.3, build.panel=T, n.col=length(uncertainty.info), n.row=NULL, ...) {
-  plts <- names(uncertainty.info) %>% setNames(., .) %>% lapply(function(n)
-    conos::embeddingPlot(embedding, colors=uncertainty.info[[n]], alpha=alpha, title=n, palette=palette, ...))
-
-  if (!build.panel)
-    return(plts)
-
-  return(cowplot::plot_grid(plotlist=plts, ncol=n.col, nrow=n.row))
+plotUncertaintyPerCell <- function(embedding, uncertainty.info, palette=colorRampPalette(c("gray", "#ffeda0", "#fec44f", "#f03b20")), alpha=0.3,
+                                   build.panel=T, n.col=length(uncertainty.info), n.row=NULL, ...) {
+  names(uncertainty.info) %>% setNames(., .) %>% lapply(function(n)
+    conos::embeddingPlot(embedding, colors=uncertainty.info[[n]], alpha=alpha, title=n, palette=palette, ...)) %>%
+    arrangePlots(build.panel=build.panel, n.col=n.col, n.row=n.row)
 }
 
 #' @param text.angle angle of x-axis labels
-plotOneUncertaintyPerClust <- function(uncertainty.per.clust, clusters, annotation=NULL, ann.per.clust=NULL, threshold=0.5, text.angle=45, title=NULL) {
+#' @inheritDotParams conos:::styleEmbeddingPlot
+plotOneUncertaintyPerClust <- function(uncertainty.per.clust, clusters, annotation=NULL, ann.per.clust=NULL, threshold=0.5, text.angle=45, ...) {
   if (is.null(ann.per.clust) && is.null(annotation))
     stop("Either annotation or ann.per.clust must be provided")
 
@@ -167,11 +165,9 @@ plotOneUncertaintyPerClust <- function(uncertainty.per.clust, clusters, annotati
     ggplot2::theme(axis.text.x=ggplot2::element_text(angle=text.angle, hjust=1)) +
     ggplot2::geom_hline(ggplot2::aes(yintercept=threshold)) + ggplot2::ylim(0, 1)
 
-  if (!is.null(title)) {
-    gg <- gg + ggplot2::ggtitle(title)
-  }
+  gg %<>% conos:::styleEmbeddingPlot(show.ticks=T, show.labels=T, ...)
 
-  return(gg)
+  return(gg + ggplot2::labs(x="", y="Uncertainty"))
 }
 
 #' Uncertainty barplots per cluster
@@ -179,10 +175,11 @@ plotOneUncertaintyPerClust <- function(uncertainty.per.clust, clusters, annotati
 #' @inheritDotParams plotOneUncertaintyPerClust text.angle
 #' @export
 plotUncertaintyPerClust <- function(uncertainty.per.clust, clusters, annotation=NULL, ann.per.clust=NULL,
-                                    thresholds=c(coverage=0.5, negative=0.5, positive=0.75), ...) {
+                                    thresholds=c(coverage=0.5, negative=0.5, positive=0.75), build.panel=F, n.col=3, n.row=NULL, ...) {
   names(uncertainty.per.clust) %>% setNames(., .) %>% lapply(function(n)
     plotOneUncertaintyPerClust(uncertainty.per.clust[[n]], annotation=annotation, clusters=clusters,
-                               ann.per.clust=ann.per.clust, threshold=thresholds[[n]], title=n, ...))
+                               ann.per.clust=ann.per.clust, threshold=thresholds[[n]], title=n, ...)) %>%
+    arrangePlots(build.panel=build.panel, n.col=n.col, n.row=n.row)
 }
 
 #' @export
@@ -198,4 +195,29 @@ plotAssignmentConfusion <- function(scores, annotation=NULL, clusters=annotation
     data.frame(row.names=.$Cluster, check.names=F) %>% .[,2:ncol(.)] %>%
     .[names(sort(ann.per.clust)), sort(colnames(.))] %>%
     pheatmap::pheatmap(cluster_rows=F, cluster_cols=F, annotation_row=data.frame(ann.per.clust))
+}
+
+plotExpressionViolinMap <- function(markers, count.matrix, annotation, x.text.angle=45, gene.order=NULL) {
+  p.df <- lapply(markers, function(g)
+    data.frame(Expr=count.matrix[names(annotation),g], Type=annotation, Gene=g)) %>%
+    Reduce(rbind, .)
+
+  if (is.logical(gene.order) && gene.order) {
+    gene.order <- markers
+  } else {
+    gene.order <- NULL
+  }
+
+  if (!is.null(gene.order)) {
+    p.df %<>% dplyr::mutate(Gene=factor(as.character(Gene), levels=gene.order))
+  }
+
+  ggplot2::ggplot(p.df) +
+    ggplot2::geom_violin(ggplot2::aes(x=Type, y=Expr, fill=Type), scale="width") +
+    ggplot2::facet_grid(rows=ggplot2::vars(Gene)) +
+    ggplot2::theme(
+      strip.text.y=ggplot2::element_text(angle=0),
+      panel.spacing=ggplot2::unit(0, "pt"), panel.grid=ggplot2::element_blank(),
+      axis.text.y=ggplot2::element_blank(), axis.ticks=ggplot2::element_blank(),
+      axis.text.x=ggplot2::element_text(angle=x.text.angle, hjust=1), legend.position="none")
 }

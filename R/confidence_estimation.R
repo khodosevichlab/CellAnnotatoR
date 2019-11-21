@@ -1,6 +1,6 @@
 getAnnotationConfidence <- function(annotation, scores) {
   mapply(function(i,j) scores[i, j], 1:nrow(scores), match(annotation, colnames(scores))) %>%
-    setNames(rownames(scores))
+    setNames(rownames(scores)) %>% unlist()
 }
 
 scorePerCellUncertainty <- function(annotation, scores.norm, score.info, cur.types=unique(annotation), coverage.max.quantile=0.75) {

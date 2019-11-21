@@ -256,7 +256,7 @@ getMeanConfidencePerType <- function(marker.list, cm.norm, annotation) {
 }
 
 filterMarkerListByScore <- function(marker.list, cm.norm, annotation, verbose=F, n.cores=1, do.recursive=T, change.threshold=1e-5) {
-  mls.filt <- lapply(names(marker.list), function(ct) lapply(names(marker.list[[ct]]), function(et)
+  mls.filt <- lapply(names(marker.list), function(ct) lapply(c("expressed", "not_expressed"), function(et)
     lapply(marker.list[[ct]][[et]], filterMarkerList, marker.list, ct, et))) %>%
     unlist(recursive=F) %>% unlist(recursive=F)
 
@@ -284,10 +284,16 @@ filterMarkerListByScore <- function(marker.list, cm.norm, annotation, verbose=F,
   return(ml.res)
 }
 
-selectMarkersPerType <- function(cm.norm, annotation, markers.per.type, marker.list=emptyMarkerList(names(markers.per.type$positive)), max.iters=ncol(cm.norm),
-                                 max.uncertainty=0.25, verbose=0, min.pos.markers=1, max.pos.markers=10, log.step=1, n.cores=1, refinement.period=10, ret.all=T, optimization.target="mean") {
+selectMarkersPerType <- function(cm.norm, annotation, markers.per.type, marker.list=emptyMarkerList(names(markers.per.type$positive)), max.iters=ncol(cm.norm), parent="root",
+                                 max.uncertainty=0.25, verbose=0, min.pos.markers=1, max.pos.markers=10, log.step=1, n.cores=1, refinement.period=10, ret.all=F, optimization.target="mean") {
   if (!(optimization.target %in% c("max", "mean")))
     stop("Unknown optimization.target: ", optimization.target)
+
+  if (verbose > 0) message("Running marker selection for parent type '", parent, "'")
+
+  for (n in names(marker.list)) {
+    marker.list[[n]]$parent <- parent
+  }
 
   cm.norm %<>% .[names(annotation), unique(unlist(markers.per.type))] %>% as.matrix()
   mean.unc.per.type <- (1 - getMeanConfidencePerType(marker.list, cm.norm, annotation))
@@ -364,8 +370,8 @@ prepareDeInfo <- function(de.info, annotation, cm.raw, ..., n.cores=1, verbose=F
 }
 
 
-emptyMarkerList <- function(cell.types) {
-  return(cell.types %>% setNames(., .) %>% lapply(function(x) list(expressed=c(), not_expressed=c())))
+emptyMarkerList <- function(cell.types, parent=NULL) {
+  return(cell.types %>% setNames(., .) %>% lapply(function(x) list(expressed=c(), not_expressed=c(), parent=parent)))
 }
 
 ## can add small bonus for negative markers, which target a log of negative cells even though there are no positive expression yet

@@ -60,3 +60,54 @@ getClassificationData <- function(cm, markers, prenormalized=F, data.gene.id.typ
   res <- list(cm=gi$cm, classification.tree=classification.tree, gene.table=gi$gene.table, marker.list=markers)
   return(res)
 }
+
+### Save markers
+
+markersToMarkup <- function(markers, name) {
+  if (!is.null(markers$parent) && (markers$parent == "root")) {
+    markers$parent <- NULL
+  }
+
+  expr <- paste0("expressed: ", paste0(markers$expressed, collapse=", "), "\n")
+  if (!is.null(markers$not_expressed) && length(markers$not_expressed) > 0) {
+    not.expr <- paste0("not expressed: ", paste0(markers$not_expressed, collapse=", "), "\n")
+  } else {
+    not.expr <- ""
+  }
+
+  parent <- if (!is.null(markers$parent)) paste0("subtype of: ", markers$parent[1], "\n") else ""
+
+  return(paste0("> ", name, "\n", expr, not.expr, parent, "\n"))
+}
+
+#' Convert marker list to the markup language and optionally save it to a file
+#'
+#' @param marker.list list of markers
+#' @param file file to save. If empty string, returns markup instead of saving
+#' @param group.by.parent group cell types in the markup by the parent type
+#' @export
+markerListToMarkup <- function(marker.list, file="", group.by.parent=T) {
+  if (!group.by.parent) {
+    markup.text <- names(marker.list) %>% sort() %>%
+      lapply(function(n) markersToMarkup(marker.list[[n]], n)) %>% paste(collapse="")
+  } else {
+    for (n in names(marker.list)) {
+      if (length(marker.list[[n]]$parent) == 0) {
+        marker.list[[n]]$parent <- "root"
+      }
+    }
+
+    ml.per.parent <- marker.list %>% split(sapply(., `[[`, "parent")) %$%
+      c(list(root=root), .[names(.) != "root"])
+    markup.text <- names(ml.per.parent) %>% lapply(function(pn)
+      paste0("## ", pn, "\n\n", markerListToMarkup(ml.per.parent[[pn]], group.by.parent=F))) %>%
+      paste0(collapse="")
+  }
+
+  if (!is.null(file) && nchar(file) > 0) {
+    cat(markup.text, file=file)
+    return(file)
+  }
+
+  return(markup.text)
+}
