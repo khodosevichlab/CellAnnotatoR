@@ -5,7 +5,8 @@
 \title{Assign cell types for each cell based on type scores. Optionally uses `clusters` to expand annotation.}
 \usage{
 assignCellsByScores(graph, clf.data, score.info = NULL,
-  clusters = NULL, verbose = 0, ...)
+  clusters = NULL, verbose = 0, uncertainty.thresholds = c(coverage =
+  0.5, negative = 0.5, positive = 0.75), ...)
 }
 \arguments{
 \item{graph}{cell graph from Seurat, Pagoda2 or some other tool. Can be either in igraph or adjacency matrix format.

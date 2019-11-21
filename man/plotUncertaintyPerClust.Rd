@@ -4,14 +4,12 @@
 \alias{plotUncertaintyPerClust}
 \title{Uncertainty barplots per cluster}
 \usage{
-plotUncertaintyPerClust(uncertainty.info, annotation = NULL,
-  clusters = NULL, ann.per.clust = NULL, thresholds = c(coverage =
-  0.5, negative = 0.5, positive = 0.75), build.panel = T,
-  n.col = length(uncertainty.info), n.row = NULL, ...)
+plotUncertaintyPerClust(uncertainty.per.clust, clusters,
+  annotation = NULL, ann.per.clust = NULL, thresholds = c(coverage =
+  0.5, negative = 0.5, positive = 0.75), build.panel = F, n.col = 3,
+  n.row = NULL, ...)
 }
 \arguments{
-\item{build.panel}{join plots to single panel}
-
 \item{...}{Arguments passed on to \code{plotOneUncertaintyPerClust}
 \describe{
   \item{text.angle}{angle of x-axis labels}
