@@ -257,6 +257,16 @@ filterMarkerList <- function(gene, marker.list, cell.type, expr.type) {
   return(marker.list)
 }
 
+generateFilteredMarkerLists <- function(marker.list) {
+  lapply(names(marker.list), function(ct) {
+    if (!is.null(marker.list[[ct]]$locked) && marker.list[[ct]]$locked)
+      return(c())
+
+    lapply(c("expressed", "not_expressed"), function(et)
+      lapply(marker.list[[ct]][[et]], filterMarkerList, marker.list, ct, et))
+  }) %>% unlist(recursive=F) %>% unlist(recursive=F)
+}
+
 getMeanConfidencePerType <- function(marker.list, cm.norm, annotation) {
   c.scores <- lapply(marker.list, getCellTypeScoreInfo, cm.norm) %>%
     lapply(`[[`, "scores") %>% as.data.frame(optional=T) %>% normalizeScores()
@@ -265,9 +275,9 @@ getMeanConfidencePerType <- function(marker.list, cm.norm, annotation) {
 }
 
 filterMarkerListByScore <- function(marker.list, cm.norm, annotation, verbose=F, n.cores=1, do.recursive=T, change.threshold=1e-5) {
-  mls.filt <- lapply(names(marker.list), function(ct) lapply(c("expressed", "not_expressed"), function(et)
-    lapply(marker.list[[ct]][[et]], filterMarkerList, marker.list, ct, et))) %>%
-    unlist(recursive=F) %>% unlist(recursive=F)
+  mls.filt <- generateFilteredMarkerLists(marker.list)
+  if (length(mls.filt) == 0)
+    return(marker.list)
 
   mean.conf.per.type <- getMeanConfidencePerType(marker.list, cm.norm, annotation)
   conf.per.ml <- plapply(mls.filt, getMeanConfidencePerType, cm.norm, annotation, verbose=verbose, n.cores=n.cores)
@@ -294,12 +304,17 @@ filterMarkerListByScore <- function(marker.list, cm.norm, annotation, verbose=F,
 }
 
 #' @export
-selectMarkersPerType <- function(cm.norm, annotation, markers.per.type, marker.list=emptyMarkerList(names(markers.per.type$positive)), max.iters=ncol(cm.norm), parent="root",
-                                 max.uncertainty=0.25, verbose=0, min.pos.markers=1, max.pos.markers=10, log.step=1, n.cores=1, refinement.period=10, ret.all=F, optimization.target="mean") {
-  if (!(optimization.target %in% c("max", "mean")))
-    stop("Unknown optimization.target: ", optimization.target)
-
+selectMarkersPerType <- function(cm.norm, annotation, markers.per.type, marker.list=NULL, max.iters=ncol(cm.norm), parent="root",
+                                 max.uncertainty=0.25, verbose=0, min.pos.markers=1, max.pos.markers=10, log.step=1, n.cores=1, refinement.period=10, return.all=F) {
   if (verbose > 0) message("Running marker selection for parent type '", parent, "'")
+
+  if (is.null(marker.list)) {
+    marker.list <- emptyMarkerList(names(markers.per.type$positive))
+  } else {
+    for (n in names(marker.list)) {
+      marker.list[[n]]$locked <- T
+    }
+  }
 
   for (n in names(marker.list)) {
     marker.list[[n]]$parent <- parent
@@ -325,8 +340,7 @@ selectMarkersPerType <- function(cm.norm, annotation, markers.per.type, marker.l
     markers.per.type %<>% updateMarkersPerType(marker.list=setNames(list(m.update), cell.type))
 
     mean.unc.per.type.new <- (1 - getMeanConfidencePerType(marker.list.new, cm.norm, annotation))
-    if ((optimization.target == "mean") && (mean(mean.unc.per.type.new) < mean(mean.unc.per.type)) ||
-        (optimization.target == "max") && (max(mean.unc.per.type.new) < max(mean.unc.per.type))) {
+    if (mean(mean.unc.per.type.new) < mean(mean.unc.per.type)) {
       mean.unc.per.type <- mean.unc.per.type.new
       marker.list <- marker.list.new
       did.refinement <- F
@@ -352,7 +366,11 @@ selectMarkersPerType <- function(cm.norm, annotation, markers.per.type, marker.l
     marker.list %<>% filterMarkerListByScore(cm.norm, annotation, verbose=(verbose > 1), n.cores=n.cores)
   }
 
-  if (ret.all)
+  for (n in names(marker.list)) {
+    marker.list[[n]]$locked <- NULL
+  }
+
+  if (return.all)
     return(list(marker.list=marker.list, markers.per.type=markers.per.type))
 
   return(marker.list)
