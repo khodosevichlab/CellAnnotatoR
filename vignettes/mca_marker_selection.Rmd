@@ -1,0 +1,253 @@
+---
+title: "Conos alignment of new datasets"
+output: rmarkdown::github_document
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+---
+
+```{r, message=FALSE, warning=FALSE}
+library(ggplot2)
+library(magrittr)
+library(Matrix)
+library(pbapply)
+library(dplyr)
+library(pagoda2)
+library(CellAnnotatoR)
+
+theme_set(theme_bw())
+```
+
+## Download data
+
+To run this vignette you need [MCA](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE108097) Lung data, which is available under accession numbers 
+[GSM2906429](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSM2906429), [GSM2906430](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSM2906430) 
+and [GSM2906431](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSM2906431). There, you need to download files *GSM2906429_Lung1_dge.txt.gz*, *GSM2906430_Lung2_dge.txt.gz* and *GSM2906431_Lung3_dge.txt.gz*. 
+
+```
+wget https://www.ncbi.nlm.nih.gov/geo/download/\?acc\=GSM2906429\&format\=file\&file\=GSM2906429%5FLung1%5Fdge%2Etxt%2Egz -O ./GSM2906429_Lung1_dge.txt.gz
+wget https://www.ncbi.nlm.nih.gov/geo/download/\?acc\=GSM2906430\&format\=file\&file\=GSM2906430%5FLung2%5Fdge%2Etxt%2Egz -O ./GSM2906430_Lung2_dge.txt.gz
+wget https://www.ncbi.nlm.nih.gov/geo/download/\?acc\=GSM2906431\&format\=file\&file\=GSM2906431%5FLung3%5Fdge%2Etxt%2Egz -O ./GSM2906431_Lung3_dge.txt.gz
+```
+
+You also need to download `MCA_CellAssignments.csv` from the [paper figshare](https://figshare.com/s/865e694ad06d5857db4b):
+
+```
+wget https://ndownloader.figshare.com/files/11083451\?private_link\=865e694ad06d5857db4b -O MCA_CellAssignments.csv
+```
+
+Then, extract the content with `gunzip GSM2906429_Lung1_dge.txt.gz GSM2906430_Lung2_dge.txt.gz GSM2906431_Lung3_dge.txt.gz`.
+
+## Load data
+
+Here, function `dataPath` contains path to the downloaded files with data. You need to adjust it to your folder:
+
+```{r}
+dataPath <- function(...) file.path("~/mh/Data/MCA/lung/", ...)
+
+readTxtMtx <- function(path) {
+  suppressWarnings(cm <- data.table::fread(path))
+  cm <- as.matrix(cm[, 2:ncol(cm)], rownames=cm$V1) %>% as("dgCMatrix")
+  return(cm)
+}
+```
+
+```{r}
+cms <- list.files(dataPath(), pattern="*.txt", full.names=T) %>% lapply(readTxtMtx)
+
+cm_merged <- conos:::mergeCountMatrices(cms)
+cell_info <- read.csv(dataPath("MCA_CellAssignments.csv"))
+
+cluster_ids <- cell_info %$% setNames(gsub("Lung_", "", ClusterID), Cell.name)
+annotation <- cell_info %$% setNames(Annotation, Cell.name) %>% .[colnames(cm_merged)] %>% 
+  droplevels() %>% gsub("[(]Lung[)]", "", .) %>% gsub("−", "-", .) %>% 
+  setNames(colnames(cm_merged)) %>% .[!is.na(.)]
+```
+
+Here we use Pagoda2 to get embedding and differential genes. In case your data consists of multiple datasets, Conos or Seurat may be used as well.
+
+```{r, fig.width=5, fig.height=5}
+p2 <- basicP2proc(cm_merged[, names(annotation)], n.cores=10, get.largevis=F, make.geneknn=F)
+conos::embeddingPlot(p2$embeddings$PCA$tSNE, groups=annotation, font.size=c(2, 3))
+```
+
+## Define hierarchy
+
+Hierarchies can be defiened either by hands or in an automated way. 
+
+### Automated inference of hierarchies
+
+The automated algorithm is rather simple and will be improved in future.  And currently, it **can not** be used on the aligned data.
+
+```{r, fig.width=7, fig.height=8}
+hierarchy <- deriveHierarchy(p2$reductions$PCA, annotation, max.depth=3)
+clf_tree <- hierarchyToClassificationTree(hierarchy)
+plotTypeHierarchy(clf_tree)
+```
+
+We can give meaningful names to the most of the derived types. As Pagoda PCA is stochastic, hierarchies may 
+slightly vary from run to run, so these lines must be adjusted for your cases:
+
+```{r, eval=FALSE}
+t_names <- c(l1_1="Alveolar1", l1_4="B", l1_6="Ciliated", l2_14="Endothelial1", l1_10="Endothelial",
+             l2_21="Stromal1", l1_11="Stromal", l2_15="Granulocyte", l2_12="T", l1_9="T_NK", 
+             l2_2="Macrophage1", l2_2="Macrophage", l2_8="Dendritic1", l2_10="Dendritic2", l1_7="Dendritic0")
+
+igraph::V(clf_tree)[names(t_names)]$name <- t_names
+```
+
+### Manual definition of hierarchies in code
+
+Alternatively, you can define hierarchy manually:
+
+```{r, fig.width=7, fig.height=8}
+hierarchy <- list(
+  Alveolar=c("Alveolar bipotent progenitor", "AT1 Cell", "AT2 Cell"),
+  B=c("B Cell", "Ig-producing B cell"),
+  Dendritic=list(Dendritic1=c("Conventional dendritic cell_Tubb5 high", "Dendritic cell_Naaa high", "Dividing dendritic cells", 
+                              "Conventional dendritic cell_H2-M2 high", "Conventional dendritic cell_Mgl2 high"), 
+                 Dendritic2=c("Conventional dendritic cell_Gngt2 high", "Plasmacytoid dendritic cell")),
+  Endothelial=c("Endothelial cell_Kdr high", "Endothelial cell_Tmem100 high", "Endothelial cells_Vwf high"),
+  Granulocyte=c("Eosinophil granulocyte", "Neutrophil granulocyte"),
+  Macrophage=c("Alveolar macrophage_Ear2 high", "Alveolar macrophage_Pclaf high", "Interstitial macrophage"),
+  Stromal=c("Stromal cell_Acta2 high", "Stromal cell_Dcn high", "Stromal cell_Inmt high"),
+  NK_T=list(`T`=c("Dividing T cells", "T Cell_Cd8b1 high", "Nuocyte"), "NK Cell")
+) %>% c(setdiff(unique(as.character(annotation)), unlist(.)))
+
+clf_tree <- hierarchyToClassificationTree(hierarchy)
+plotTypeHierarchy(clf_tree)
+```
+
+## Marker selection
+
+Original annotation by level:
+
+```{r, fig.width=10, fig.height=4}
+ann_by_level <- mergeAnnotationByLevels(annotation, clf_tree)
+plotAnnotationByLevels(p2$embeddings$PCA$tSNE, ann_by_level, font.size=c(2, 3), n.col=3, shuffle.colors=T)
+```
+
+First, we need to find DE genes for each sub-brunch of the hierarchy:
+
+```{r}
+ann_by_parent <- getAnnotationPerParent(clf_tree, annotation)
+
+de_info_per_parent <- ann_by_parent %>% 
+  pblapply(function(ann) p2$getDifferentialGenes(groups=ann, z.threshold=0))
+
+de_info_per_parent <- pbmapply(function(de, ann) prepareDeInfo(de, ann, cm.raw=p2$misc$rawCounts, n.cores=10), 
+                               de_info_per_parent, ann_by_parent)
+```
+
+Next, do TF-IDF normalization of the matrix:
+
+```{r}
+cm_norm <- cm_merged %>% normalizeTfIdfWithFeatures() %>% .[names(annotation), ]
+```
+
+Now we can define blacklist of the genes, which shouldn't be used as markers:
+
+```{r}
+marker_blacklist <- rownames(cm_merged) %>% .[grep("mt-", .)]
+```
+
+Finally, we run marker selection for each of the sub-branches:
+
+```{r}
+marker_info <- names(de_info_per_parent) %>% setNames(., .) %>% lapply(function(n)
+  selectMarkersPerType(cm_norm, ann_by_parent[[n]], 
+                       preSelectMarkerCandidates(de_info_per_parent[[n]], blacklist=marker_blacklist), 
+                       parent=n, max.iters=50, max.uncertainty=0.25, log.step=5, verbose=1, n.cores=10))
+
+marker_list <- setNames(marker_info, NULL) %>% unlist(recursive=F)
+```
+
+## Improving known list of markers
+
+If you already know some markers, this knowledge can be used. You can either read the markers from file or create marker list by hands in code.
+
+Reading markers:
+
+```{r, eval=FALSE}
+marker_list_prior <- parseMarkerFile("markers_prior.txt")
+```
+
+Create by hands:
+
+```{r}
+marker_list_prior <- emptyMarkerList(clf.tree=clf_tree)
+marker_list_prior$`Conventional dendritic cell_Mgl2 high`$expressed <- c("Mgl2")
+marker_list_prior$`Dendritic cell_Naaa high`$expressed <- c("Naaa")
+```
+
+Check, which markers aren't presented in the matrix:
+
+```{r}
+lapply(marker_list_prior, `[`, c("expressed", "not_expressed")) %>% unlist() %>% 
+  setdiff(colnames(cm_norm))
+```
+
+```{r}
+marker_info <- names(de_info_per_parent) %>% setNames(., .) %>% lapply(function(n)
+  selectMarkersPerType(cm_norm, ann_by_parent[[n]], 
+                       preSelectMarkerCandidates(de_info_per_parent[[n]], blacklist=marker_blacklist), 
+                       marker.list=marker_list_prior,
+                       parent=n,max.iters=50, max.uncertainty=0.25, log.step=5, verbose=1, n.cores=10))
+
+marker_list <- setNames(marker_info, NULL) %>% unlist(recursive=F)
+```
+
+## Diagnostics
+
+Number of markers per type:
+
+```{r}
+sapply(marker_list, sapply, length)[1:2,] %>% t()
+```
+
+To evaluate quality of these markers we can annotate cell using them and use the uncertainty plots.
+
+```{r}
+clf_data <- getClassificationData(cm_norm, marker_list, prenormalized=T)
+ann_info <- assignCellsByScores(NULL, clf_data, clusters=annotation)
+```
+
+Original annotation:
+
+```{r, fig.width=10, fig.height=4}
+plotAnnotationByLevels(p2$embeddings$PCA$tSNE, ann_by_level, n.col=3, font.size=c(2, 3))
+```
+
+New annotation:
+
+```{r, fig.width=10, fig.height=4}
+plotAnnotationByLevels(p2$embeddings$PCA$tSNE, ann_info$annotation, n.col=3, font.size=c(2, 3))
+```
+
+Uncertainty plots per cell:
+
+```{r, fig.width=8, fig.height=6}
+score_info <- getMarkerScoreInfo(clf_data)
+unc_per_cell <- scoreCellUncertaintyPerLevel(ann_info, score_info)
+
+lapply(unc_per_cell, function(unc) plotUncertaintyPerCell(p2$embeddings$PCA$tSNE, unc)) %>% 
+  cowplot::plot_grid(plotlist=., ncol=1, labels=names(unc_per_cell), label_y=0.9, label_x=0.01)
+```
+
+Level 1 assignment scores shown on cell embedding:
+
+```{r, fig.width=10, fig.height=6}
+plotAssignmentScores(p2$embeddings$PCA$tSNE, ann_info$scores$l1, clf_data$classification.tree, parent="root", build.panel=T, size=0.1, n.col=5)
+```
+
+Positive markers:
+
+```{r, fig.height=10, fig.width=7}
+marker_list[sort(unique(ann_by_level$l1))] %>% lapply(`[[`, "expressed") %>% 
+  unlist() %>% unique() %>% 
+  plotExpressionViolinMap(p2$counts, ann_by_level$l1, gene.order=T)
+```
+
+## Save to a file
+
+```{r}
+markerListToMarkup(marker_list, file="mca_markers_auto.txt")
+```
