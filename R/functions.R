@@ -202,7 +202,8 @@ mergeAnnotationInfos <- function(ann.infos) {
 }
 
 getCellTypeScoreInfo <- function(markers, tf.idf, aggr=T) {
-  if (length(markers$expressed) == 0) {
+  expressed.genes <- intersect(markers$expressed, colnames(tf.idf))
+  if (length(expressed.genes) == 0) {
     if (aggr) {
       scores <- setNames(rep(0, nrow(tf.idf)), rownames(tf.idf))
     } else {
@@ -211,8 +212,7 @@ getCellTypeScoreInfo <- function(markers, tf.idf, aggr=T) {
 
     max.positive.expr <- setNames(rep(0, nrow(tf.idf)), rownames(tf.idf))
   } else {
-    m.expressed <- intersect(markers$expressed, colnames(tf.idf))
-    c.submat <- tf.idf[, m.expressed, drop=F]
+    c.submat <- tf.idf[, expressed.genes, drop=F]
     c.submat.t <- Matrix::t(c.submat)
     scores <- if (aggr) Matrix::colSums(c.submat.t) else c.submat
     max.positive.expr <- apply(c.submat.t, 2, max)
@@ -313,26 +313,11 @@ getMarkerScoresPerCellType <- function(clf, score.info=NULL, aggr=T) {
 
 ## Utils
 
-appendHierarchyBranch <- function(branch, parent.name) {
-  is.leaf <- (sapply(branch, is.character) & (sapply(branch, length) == 1))
-  if (any((sapply(names(branch), nchar) > 0) != !is.leaf))
-    stop("Can't parse ", parent.name, " branch: only lists must have names")
-
-  current.nodes <- lapply(c(branch[is.leaf], names(branch[!is.leaf])), function(x)
-    list(list(expressed=c(), not_expressed=c(), parent=parent.name)) %>% setNames(x))
-
-  sub.branches <- lapply(names(branch)[!is.leaf], function(n) appendHierarchyBranch(branch[[n]], n))
-  return(c(current.nodes, unlist(sub.branches, recursive=F)))
-}
-
 #' @export
 getAnnotationPerParent <- function(clf.tree, annotation) {
   classificationTreeToDf(clf.tree) %>% split(.$Parent) %>% lapply(function(df)
     mergeAnnotationToLevel(df$PathLen[1], annotation, clf.tree) %>% .[. %in% df$Node])
 }
-
-#' @export
-hierarchyToClassificationTree <- function(hierarchy) {appendHierarchyBranch(hierarchy, "root") %>% unlist(recursive=F) %>% createClassificationTree()}
 
 mergeAnnotationToLevel <- function(level, annotation, classification.tree) {
   parent.types <- classificationTreeToDf(classification.tree) %$% Node[PathLen == level] %>% unique()
