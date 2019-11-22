@@ -47,5 +47,5 @@ There are several ways to create an annotation file from scratch.
 
 1. If you have list of markers in other format, see [Garnett specification](https://cole-trapnell-lab.github.io/garnett/docs/#constructing-a-marker-file) on how to convert it to the markup format
 2. If you have an annotated dataset from the same tissue, but no existing markers [Automated marker selection based on provided annotation](vignettes/mca_marker_selection.md) (MCA Lung data). Please, be aware that marker selection algorithm is under development and will be improved.
-  - In case you already have some markers, check the section ["Improving known list of markers"](vignettes/mca_marker_selection.md#improving-known-list-of-markers)
+    - In case you already have some markers, check the section ["Improving known list of markers"](vignettes/mca_marker_selection.md#improving-known-list-of-markers)
 3. In case you want to do annotation from scratch or want to find some cell types de-novo, see "**TODO**"
