@@ -30,6 +30,7 @@ parseMarkerFile <- function(path) {
   return(lapply(marker.list, function(x) list(expressed=x@expressed, not_expressed=x@not_expressed, parent=x@parenttype)))
 }
 
+#' @export
 createClassificationTree <- function(marker.list) {
   parents <- sapply(marker.list, function(pl) if(length(pl$parent) == 0) "root" else pl$parent)
   tree <- c(parents, names(marker.list)) %>% matrix(ncol=2) %>% t() %>% igraph::make_directed_graph()
