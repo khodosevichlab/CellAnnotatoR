@@ -2,17 +2,23 @@
 % Please edit documentation in R/garnett_wrappers.R
 \name{markerListToMarkup}
 \alias{markerListToMarkup}
-\title{Convert marker list to the markup language and optionally save it to a file}
+\title{Marker List to Markup}
 \usage{
 markerListToMarkup(marker.list, file = "", group.by.parent = T)
 }
 \arguments{
-\item{marker.list}{list of markers}
+\item{marker.list}{list of markers per cell type. Can be obtained with `parseMarkerFile`}
 
-\item{file}{file to save. If empty string, returns markup instead of saving}
+\item{file}{file to save to. If empty string, returns markup text instead of saving}
 
 \item{group.by.parent}{group cell types in the markup by the parent type}
 }
+\value{
+path to the file if `file == ""` or markupt text otherwise
+}
 \description{
 Convert marker list to the markup language and optionally save it to a file
+}
+\examples{
+markerListToMarkup(clf_data$marker.list, file="markers.txt")
 }

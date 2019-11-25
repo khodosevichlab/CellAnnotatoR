@@ -23,6 +23,14 @@ unifyGeneIds <- function(cm, data.gene.id.type, marker.gene.id.type, db=NULL, ve
   return(list(cm=cm, gene.table=gene.table))
 }
 
+#' Parse Marker File
+#' @description read markers from the markup file
+#' @param path path to the markup file
+#' @return list of markers for each cell type. List elements have the following info: \itemize{
+#'   \item{expressed: vector of positive markers}
+#'   \item{not_expressed: vector of negative markers}
+#'   \item{parent: parent cell type (`"root"` if there is no parent)}
+#' }
 #' @export
 parseMarkerFile <- function(path) {
   marker.list <- path %>% readChar(file.info(.)$size) %>% paste0("\n") %>% garnett:::parse_input() %>% as.list()
@@ -30,6 +38,14 @@ parseMarkerFile <- function(path) {
   return(lapply(marker.list, function(x) list(expressed=x@expressed, not_expressed=x@not_expressed, parent=x@parenttype)))
 }
 
+#' Create Classification Tree
+#' @description creates graph object for cell type hierarchy
+#' @param marker.list list of markers per cell type. Can be obtained with `parseMarkerFile`
+#' @return igraph graph with the type hierarhcy
+#' @examples
+#'   markers <- parseMarkerFile(marker_path)
+#'   clf_tree <- createClassificationTree(markers)
+#'
 #' @export
 createClassificationTree <- function(marker.list) {
   parents <- sapply(marker.list, function(pl) if(length(pl$parent) == 0) "root" else pl$parent)
@@ -37,9 +53,10 @@ createClassificationTree <- function(marker.list) {
   return(tree)
 }
 
-#' Get cell type information from the marker file
+#' Get Classification data
+#' @description prepare information neccessary for cell type classification
 #'
-#' @param cm gene count matrix. May be in raw, TC-normalized or tf-idf-normalized format (in case of tf-idf, `prenormalized` must be set to `T`)
+#' @param cm gene count matrix with cells by columns and genes by rows. May be in raw, TC-normalized or tf-idf-normalized format (in case of tf-idf, `prenormalized` must be set to `T`)
 #' @param markers path to the file with marker genes or parsed marker list from `parseMarkerFile` function
 #' @param prenormalized is `cm` in tf-idf-normalized format? Default: FALSE.
 #' @export
@@ -81,11 +98,14 @@ markersToMarkup <- function(markers, name) {
   return(paste0("> ", name, "\n", expr, not.expr, parent, "\n"))
 }
 
-#' Convert marker list to the markup language and optionally save it to a file
+#' Marker List to Markup
+#' @description Convert marker list to the markup language and optionally save it to a file
 #'
-#' @param marker.list list of markers
-#' @param file file to save. If empty string, returns markup instead of saving
+#' @param marker.list list of markers per cell type. Can be obtained with `parseMarkerFile`
+#' @param file file to save to. If empty string, returns markup text instead of saving
 #' @param group.by.parent group cell types in the markup by the parent type
+#' @return path to the file if `file == ""` or markupt text otherwise
+#' @examples markerListToMarkup(clf_data$marker.list, file="markers.txt")
 #' @export
 markerListToMarkup <- function(marker.list, file="", group.by.parent=T) {
   if (!group.by.parent) {
