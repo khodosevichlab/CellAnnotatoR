@@ -21,9 +21,6 @@ expressed: PPBP
 expressed: CD79B
 not expressed: UHRF1, MS4A1
 
-# >Pro-B
-# expressed: STMN1
-
 >CLP
 expressed: UHRF1
 not expressed: IL7R
@@ -32,15 +29,9 @@ not expressed: IL7R
 expressed: PRDX2
 not expressed: IL7R
 
-# >ERP/early
-# expressed: APOC1, PCAT18
-
 >Progenitors
 expressed: AVP, HPGDS, SPINK2
 not expressed: PPBP
-
-# >Granulocyte progenitors
-# expressed: ELANE
 
 >Pre-Dendritic
 expressed: FCER1A

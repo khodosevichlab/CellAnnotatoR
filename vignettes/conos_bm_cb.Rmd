@@ -37,11 +37,6 @@ panel_preprocessed <- lapply(panel, basicP2proc, n.cores=4, min.cells.per.gene=0
                              n.odgenes=2e3, get.largevis=FALSE, make.geneknn=FALSE)
 ```
 
-```{r}
-cellannot <- read.table(file.path(find.package('conos'),'extdata','cellannot.txt'),header=F,sep='\t')
-cellannot <- setNames(cellannot[,2], cellannot[,1])
-```
-
 Now we can integrate it with Conos:
 
 ```{r}
@@ -56,11 +51,12 @@ con$plotGraph(size=0.2)
 Prepare data for annotation:
 
 ```{r}
-marker_path <- rprojroot::find_package_root_file("markers/bm_cb.md")
-clf_datas <- pblapply(con$samples, function(p2) 
-  getClassificationData(Matrix::t(p2$misc$rawCounts), marker_path))
+marker_path <- "../markers/bm_cb.md"
+markers <- parseMarkerFile(marker_path) # We don't want to re-read marker inside each step of lapply
+clf_datas <- lapply(con$samples, function(p2) 
+  getClassificationData(Matrix::t(p2$misc$rawCounts), markers))
 
-marker_scores <- pblapply(clf_datas, getMarkerScoresPerCellType)
+score_infos <- lapply(clf_datas, getMarkerScoreInfo)
 ```
 
 ## Annotation
@@ -69,8 +65,8 @@ Now we can run individual annotation on each dataset:
 
 ```{r}
 ann_by_dataset <- pbmapply(function(cd, ms, p2) 
-  assignCellsByScores(p2$graphs$PCA, scores=ms, clf.data=cd),
-  clf_datas, marker_scores, panel_preprocessed, SIMPLIFY=F) %>% 
+  assignCellsByScores(p2$graphs$PCA, score.info=ms, clf.data=cd),
+  clf_datas, score_infos, panel_preprocessed, SIMPLIFY=F) %>% 
   setNames(names(clf_datas))
 
 all_annotations <- lapply(ann_by_dataset, function(an) an$annotation$l1) %>% Reduce(c, .)
@@ -81,8 +77,8 @@ We can see that running annotation on individual samples doesn't neccesserily gu
 as such approach can't utilize joint structure. To deal with it we can run annotation on the whole graph:
 
 ```{r}
-all_scores <- Reduce(rbind, marker_scores)
-ann_by_level <- assignCellsByScores(con$graph, scores=all_scores, clf.data=clf_datas[[1]])
+all_score_info <- mergeScoreInfos(score_infos, verbose=T)
+ann_by_level <- assignCellsByScores(con$graph, score.info=all_score_info, clf.data=clf_datas[[1]])
 con$plotGraph(groups=ann_by_level$annotation$l1, size=0.2, plot.na=F)
 ```
 
@@ -90,10 +86,9 @@ To further deal with noise, we can use clustering information:
 
 ```{r}
 clusters <- con$clusters$leiden$groups
-annotation <- assignCellsByScores(con$graph, scores=all_scores, clf.data=clf_datas[[1]], 
+annotation <- assignCellsByScores(con$graph, score.info=all_score_info, clf.data=clf_datas[[1]], 
                                   clusters=clusters)$annotation$l1
 con$plotGraph(groups=annotation, size=0.2)
-# con$plotGraph(groups=clusters, size=0.2, shuffle.colors=T)
 ```
 
 In the current example, clustering resolution is too low to separate all subpopulatons, which lead to lack of CLP and DC populations. Let's increase resolution:
@@ -108,7 +103,7 @@ con$plotGraph(groups=clusters_inc, size=0.2, shuffle.colors=T)
 And now we can re-run annotation:
 
 ```{r}
-annotation <- assignCellsByScores(con$graph, scores=all_scores, clf.data=clf_datas[[1]], 
+annotation <- assignCellsByScores(con$graph, score.info=all_score_info, clf.data=clf_datas[[1]], 
                                   clusters=clusters_inc)$annotation$l1
 con$plotGraph(groups=annotation, size=0.2)
 ```
