@@ -33,19 +33,6 @@ plotAssignmentScores <- function(embedding, scores, classification.tree, parent.
     arrangePlots(build.panel=build.panel, n.row=n.row, n.col=n.col)
 }
 
-plotGarnettAssignemnts <- function(embedding, assignment, plot.ambig=T, show.legend=T, mark.groups=F, ...) {
-  lapply(colnames(assignment), function(n) {
-    groups <- setNames(assignment[[n]], rownames(assignment));
-    if (!plot.ambig) {
-      groups <- droplevels(groups[!(groups %in% c("None", "Ambiguous"))])
-    }
-
-    conos::embeddingPlot(
-      embedding, groups=groups, show.legend=show.legend, mark.groups=mark.groups, title=n,
-      plot.theme=ggplot2::theme(legend.background=ggplot2::element_rect(fill=ggplot2::alpha("white", 0.2))), ...)
-  })
-}
-
 #' @export
 plotTypeMarkers <- function(embedding, count.matrix, cell.type, marker.list, show.legend=T, ...) {
   plot.func <- function(gene, title) {
