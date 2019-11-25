@@ -264,49 +264,6 @@ getCellTypeScoreInfo <- function(markers, tf.idf, aggr=T) {
   return(res)
 }
 
-getCellTypeScore <- function(markers, tf.idf, aggr=T, do.multiply=T, check.gene.presence=T) {
-  .Deprecated("getCellTypeScoreInfo(...)$scores")
-  if (length(markers$expressed) == 0) {
-    if (aggr) {
-      res <- setNames(rep(0, nrow(tf.idf)), rownames(tf.idf))
-    } else {
-      res <- matrix(0, nrow=nrow(tf.idf), ncol=0, dimnames=list(rownames(tf.idf), character()))
-    }
-
-    if (do.multiply)
-      return(res)
-
-    score.mult <- setNames(rep(1, nrow(tf.idf)), rownames(tf.idf))
-    return(list(scores=res, mult=score.mult))
-  }
-
-  m.expressed <- if (check.gene.presence) intersect(markers$expressed, colnames(tf.idf)) else markers$expressed # TODO: Remove this?
-
-  c.submat <- tf.idf[, m.expressed, drop=F]
-  c.submat.t <- Matrix::t(c.submat)
-  scores <- if (aggr) Matrix::colSums(c.submat.t) else c.submat
-
-  not.expressed.genes <- intersect(markers$not_expressed, colnames(tf.idf))
-  if (length(not.expressed.genes) == 0) {
-    if (do.multiply)
-      return(scores)
-
-    score.mult <- setNames(rep(1, nrow(tf.idf)), rownames(tf.idf))
-    return(list(scores=res, mult=score.mult))
-  }
-
-  max.positive.expr <- apply(c.submat.t, 2, max)
-  max.negative.expr <- apply(tf.idf[, not.expressed.genes, drop=F], 1, max)
-
-  score.mult <- pmax(max.positive.expr - max.negative.expr, 0) / max.positive.expr
-  score.mult[is.na(score.mult)] <- 0
-
-  if (!do.multiply)
-    return(list(scores=scores, mult=score.mult))
-
-  return(scores * score.mult)
-}
-
 normalizeScores <- function(scores, min.val=1e-10) {
   scores[rowSums(scores) < 1e-10,] <- 1
   scores  %<>% `/`(rowSums(.))
