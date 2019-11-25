@@ -41,6 +41,8 @@ plotAnnotationByLevels(emb, ann_by_level$annotation, clusters=clusters, size=0.2
 
 See the vignettes for a [Seurat PBMC3k](vignettes/seurat_pbmc3k.md) example and [Conos BM+CB alignment annotation](vignettes/conos_bm_cb.md).
 
+Also see [Reference Manual](CellAnnotatoR.pdf) for (almost) full list of functions.
+
 ## Creating annotation file
 
 ### Extracting markers from a provided annotation
