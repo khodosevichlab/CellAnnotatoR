@@ -8,10 +8,16 @@ tutorial](https://satijalab.org/seurat/v3.0/pbmc3k_tutorial.html)
 library(CellAnnotatoR)
 library(Seurat)
 library(dplyr)
+library(ggplot2)
+
+theme_set(theme_bw())
 ```
 
+First, read the data. You need to set your path to data
+here:
+
 ``` r
-pbmc_data <- Read10X("../data/pbmc3k/filtered_gene_bc_matrices/hg19")
+pbmc_data <- Read10X("~/mh/Data/10x/pbmc3k/filtered_gene_bc_matrices/hg19/")
 pbmc <- CreateSeuratObject(pbmc_data, project="pbmc3k", min.cells=3, min.features=200)
 pbmc[["percent.mt"]] <- PercentageFeatureSet(pbmc, pattern = "^MT-")
 
@@ -63,10 +69,11 @@ DimPlot(pbmc, reduction = "tsne", label=T) + NoLegend()
 ![](seurat_pbmc3k_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
 
 Let’s also plot marker expression per cluster to ensure that everything
-is correct:
+is
+correct:
 
 ``` r
-plotSubtypeMarkers("root", emb, cm_norm, clf_data, n.col=3)
+plotSubtypeMarkers(emb, cm_norm, parent.type="root", clf.data=clf_data, n.col=3)
 ```
 
 ![](seurat_pbmc3k_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->

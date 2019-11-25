@@ -20,10 +20,15 @@ This vignette shows annotation of PBMC3k dataset from the [Seurat tutorial](http
 library(CellAnnotatoR)
 library(Seurat)
 library(dplyr)
+library(ggplot2)
+
+theme_set(theme_bw())
 ```
 
+First, read the data. You need to set your path to data here:
+
 ```{r, message=FALSE, warning=FALSE}
-pbmc_data <- Read10X("../data/pbmc3k/filtered_gene_bc_matrices/hg19")
+pbmc_data <- Read10X("~/mh/Data/10x/pbmc3k/filtered_gene_bc_matrices/hg19/")
 pbmc <- CreateSeuratObject(pbmc_data, project="pbmc3k", min.cells=3, min.features=200)
 pbmc[["percent.mt"]] <- PercentageFeatureSet(pbmc, pattern = "^MT-")
 
@@ -70,7 +75,7 @@ DimPlot(pbmc, reduction = "tsne", label=T) + NoLegend()
 Let's also plot marker expression per cluster to ensure that everything is correct:
 
 ```{r, fig.width=10, fig.height=10}
-plotSubtypeMarkers("root", emb, cm_norm, clf_data, n.col=3)
+plotSubtypeMarkers(emb, cm_norm, parent.type="root", clf.data=clf_data, n.col=3)
 ```
 
 
