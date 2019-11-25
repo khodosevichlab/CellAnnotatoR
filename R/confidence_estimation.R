@@ -38,6 +38,7 @@ scorePerClusterUncertainty <- function(unc.per.cell, clusters) {
   ))
 }
 
+#' @export
 scoreClusterUncertaintyPerLevel <- function(cell.uncertainty.per.level, clusters) {
   lapply(cell.uncertainty.per.level, scorePerClusterUncertainty, clusters)
 }

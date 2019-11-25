@@ -6,8 +6,8 @@
 \usage{
 plotUncertaintyPerClust(uncertainty.per.clust, clusters,
   annotation = NULL, ann.per.clust = NULL, thresholds = c(coverage =
-  0.5, negative = 0.5, positive = 0.75), build.panel = F, n.col = 3,
-  n.row = NULL, ...)
+  0.5, negative = 0.5, positive = 0.75), build.panel = T, n.col = 1,
+  n.row = NULL, adjust.legend = T, rel.legend.width = 0.25, ...)
 }
 \arguments{
 \item{...}{Arguments passed on to \code{plotOneUncertaintyPerClust}

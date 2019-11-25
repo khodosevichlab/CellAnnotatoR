@@ -85,6 +85,10 @@ diffuseGraph <- function(graph, scores, fading=10, fading.const=0.5, score.fixin
 #' @param clusters cluster assignment of data. Used to expand annotation on these clusters.
 #' @param verbose verbosity level (from 0 to 2)
 #' @inheritDotParams diffuseScorePerType
+#' @return list with parameters:
+#'   - annotation: annotation per level
+#'   - scores: assignment scores per leve
+#'   - annotation.filt: the same as annotation, but cells, which don't pass QC are assigned to NA class
 #'
 #' @export
 assignCellsByScores <- function(graph, clf.data, score.info=NULL, clusters=NULL, verbose=0, uncertainty.thresholds=c(coverage=0.5, negative=0.5, positive=0.75), ...) {

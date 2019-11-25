@@ -25,6 +25,12 @@ Use `graph=NULL` to skip graph diffusion step and get raw score annotation (usef
   \item{}{}
 }}
 }
+\value{
+list with parameters:
+  - annotation: annotation per level
+  - scores: assignment scores per leve
+  - annotation.filt: the same as annotation, but cells, which don't pass QC are assigned to NA class
+}
 \description{
 Assign cell types for each cell based on type scores. Optionally uses `clusters` to expand annotation.
 }

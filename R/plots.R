@@ -41,9 +41,8 @@ plotTypeMarkers <- function(embedding, count.matrix, cell.type, marker.list, sho
   return(res)
 }
 
-#' @export
-plotSubtypeMarkers <- function(embedding, count.matrix, parent.type="root", clf.data=NULL, clf.tree=NULL, marker.list=NULL,
-                               show.legend=F, max.depth=NULL, drop.missing=T, build.panel=T, n.col=NULL, n.row=NULL, marker.type=c("expressed", "not_expressed"), ...) {
+extractMarkersFromSubtypes <- function(parent.type="root", clf.data=NULL, clf.tree=NULL, marker.list=NULL, count.matrix=NULL,
+                                       max.depth=NULL, drop.missing=T, marker.type=c("expressed", "not_expressed")) {
   if (length(setdiff(marker.type, c("expressed", "not_expressed"))) > 0)
     stop("Unknown marker.type")
 
@@ -61,7 +60,7 @@ plotSubtypeMarkers <- function(embedding, count.matrix, parent.type="root", clf.
 
   markers <- list()
 
-  for (type in getAllSubtypes(parent.type, clf.tree, max.depth=max.depth)) {
+  for (type in sort(getAllSubtypes(parent.type, clf.tree, max.depth=max.depth))) {
     if ("expressed" %in% marker.type) {
       for (g in marker.list[[type]]$expressed) {
         markers[[g]] %<>% c(paste0(type, "(+)"))
@@ -75,9 +74,18 @@ plotSubtypeMarkers <- function(embedding, count.matrix, parent.type="root", clf.
     }
   }
 
-  if (drop.missing) {
+  if (drop.missing && !is.null(count.matrix)) {
     markers <- markers[names(markers) %in% colnames(count.matrix)]
   }
+
+  return(markers)
+}
+
+#' @export
+plotSubtypeMarkers <- function(embedding, count.matrix, parent.type="root", clf.data=NULL, clf.tree=NULL, marker.list=NULL,
+                               show.legend=F, max.depth=NULL, build.panel=T, n.col=NULL, n.row=NULL, marker.type=c("expressed", "not_expressed"), ...) {
+  markers <- extractMarkersFromSubtypes(parent.type=parent.type, clf.data=clf.data, clf.tree=clf.tree, marker.list=marker.list,
+                                        count.matrix=count.matrix, max.depth=max.depth, drop.missing=T, marker.type=marker.type)
 
   titles <- mapply(function(n,ts) paste0(n, ": ", ts), names(markers), lapply(markers, paste, collapse=", "))
   plots <- mapply(function(gene, title) {
@@ -150,12 +158,9 @@ plotUncertaintyPerCell <- function(embedding, uncertainty.info, palette=colorRam
 #' @param text.angle angle of x-axis labels
 #' @inheritDotParams conos:::styleEmbeddingPlot
 plotOneUncertaintyPerClust <- function(uncertainty.per.clust, clusters, annotation=NULL, ann.per.clust=NULL, threshold=0.5, text.angle=45, ...) {
-  if (is.null(ann.per.clust) && is.null(annotation))
-    stop("Either annotation or ann.per.clust must be provided")
-
   p.df <- tibble::enframe(uncertainty.per.clust, name="Cluster", value="Uncertainty")
   p.aes <- ggplot2::aes()
-  if (is.null(ann.per.clust)) {
+  if (is.null(ann.per.clust) && !is.null(annotation)) {
     ann.per.clust <- getAnnotationPerCluster(annotation, clusters)
   }
 
@@ -179,11 +184,23 @@ plotOneUncertaintyPerClust <- function(uncertainty.per.clust, clusters, annotati
 #' @inheritDotParams plotOneUncertaintyPerClust text.angle
 #' @export
 plotUncertaintyPerClust <- function(uncertainty.per.clust, clusters, annotation=NULL, ann.per.clust=NULL,
-                                    thresholds=c(coverage=0.5, negative=0.5, positive=0.75), build.panel=F, n.col=3, n.row=NULL, ...) {
-  names(uncertainty.per.clust) %>% setNames(., .) %>% lapply(function(n)
+                                    thresholds=c(coverage=0.5, negative=0.5, positive=0.75), build.panel=T, n.col=1, n.row=NULL, adjust.legend=T, rel.legend.width=0.25, ...) {
+  ggs <- names(uncertainty.per.clust) %>% setNames(., .) %>% lapply(function(n)
     plotOneUncertaintyPerClust(uncertainty.per.clust[[n]], annotation=annotation, clusters=clusters,
-                               ann.per.clust=ann.per.clust, threshold=thresholds[[n]], title=n, ...)) %>%
-    arrangePlots(build.panel=build.panel, n.col=n.col, n.row=n.row)
+                               ann.per.clust=ann.per.clust, threshold=thresholds[[n]], title=n, ...))
+
+  if (!build.panel || !adjust.legend || is.null(annotation))
+    return(arrangePlots(ggs, build.panel=build.panel, n.col=n.col, n.row=n.row))
+
+  if (!requireNamespace("ggpubr", quietly=T))
+    stop("You need to install package 'ggpubr' to be able to adjust legend")
+
+  ggl <- ggpubr::get_legend(ggs[[1]])
+  ggs %<>% lapply(`+`, ggplot2::theme(legend.position="none", plot.margin=ggplot2::margin()))
+  ggr <- arrangePlots(ggs, build.panel=build.panel, n.col=n.col, n.row=n.row) %>%
+    cowplot::plot_grid(ggl, rel_widths=c(1 - rel.legend.width, rel.legend.width))
+
+  return(ggr)
 }
 
 #' @export
@@ -201,14 +218,25 @@ plotAssignmentConfusion <- function(scores, annotation=NULL, clusters=annotation
     pheatmap::pheatmap(cluster_rows=F, cluster_cols=F, annotation_row=data.frame(ann.per.clust))
 }
 
+#' Plot expression violin map for given marker list
+#' @inheritParams plotExpressionViolinMap
+#' @inheritParams plotSubtypeMarkers
 #' @export
-plotExpressionViolinMap <- function(markers, count.matrix, annotation, x.text.angle=45, gene.order=NULL) {
+plotMarkerListViolinMap <- function(count.matrix, annotation, parent.type="root", clf.data=NULL, clf.tree=NULL, marker.list=NULL,
+                                    max.depth=NULL, marker.type="expressed", text.angle=45, gene.order=NULL, ...) {
+  extractMarkersFromSubtypes(parent.type=parent.type, clf.data=clf.data, clf.tree=clf.tree, marker.list=marker.list,
+                             count.matrix=count.matrix, max.depth=max.depth, drop.missing=T, marker.type=marker.type) %>%
+    names() %>% plotExpressionViolinMap(count.matrix, annotation, text.angle=text.angle, gene.order=gene.order)
+}
+
+#' @export
+plotExpressionViolinMap <- function(markers, count.matrix, annotation, text.angle=45, gene.order=NULL) {
   p.df <- lapply(markers, function(g)
     data.frame(Expr=count.matrix[names(annotation),g], Type=annotation, Gene=g)) %>%
     Reduce(rbind, .)
 
   if (is.logical(gene.order) && gene.order) {
-    gene.order <- markers
+    gene.order <- unique(markers)
   } else {
     gene.order <- NULL
   }
@@ -224,7 +252,7 @@ plotExpressionViolinMap <- function(markers, count.matrix, annotation, x.text.an
       strip.text.y=ggplot2::element_text(angle=0),
       panel.spacing=ggplot2::unit(0, "pt"), panel.grid=ggplot2::element_blank(),
       axis.text.y=ggplot2::element_blank(), axis.ticks=ggplot2::element_blank(),
-      axis.text.x=ggplot2::element_text(angle=x.text.angle, hjust=1), legend.position="none")
+      axis.text.x=ggplot2::element_text(angle=text.angle, hjust=1), legend.position="none")
 }
 
 #' Plot gene expression on cell embedding

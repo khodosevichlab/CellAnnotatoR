@@ -21,7 +21,8 @@ Imports:
 Suggests:
     ggtree (>= 1.99.1),
     knitr,
-    rmarkdown
+    rmarkdown,
+    ggpubr
 Remotes: 
     hms-dbmi/conos,
     cole-trapnell-lab/garnett,
