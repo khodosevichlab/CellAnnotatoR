@@ -1,3 +1,9 @@
+#' Arrange Plots
+#' @param plot.list list of plots
+#' @param build.panel combine individual plots to a single panel
+#' @param n.col number of columns in the panel
+#' @param n.row number of rows in the panel
+#' @return panel of plots if `build.panel==T` or `plot.list` otherwise
 arrangePlots <- function(plot.list, build.panel, n.col=NULL, n.row=NULL) {
   if (build.panel)
     return(cowplot::plot_grid(plotlist=plot.list, ncol=n.col, nrow=n.row))
@@ -5,11 +11,24 @@ arrangePlots <- function(plot.list, build.panel, n.col=NULL, n.row=NULL) {
   return(plot.list)
 }
 
+#' Plot Assignment Scores
+#' @description plot assignment scores on a separate scatterplot for each cell type
+#' @param scores assignment scores. Can be obtained with `assignCellsByScores`
+#' @param parent.node cell type, which subtypes' scores must be plotted
+#' @inheritParams conos::embeddingPlot
+#' @inheritParams classificationTreeToDf
+#' @inheritParams arrangePlots
+#' @inheritDotParams conos::embeddingPlot
+#' @inherit arrangePlots return
+#' @examples
+#'   clf_data <- getClassificationData(cm, marker_path)
+#'   ann_by_level <- assignCellsByScores(graph, clf_data)
+#'   plotAssignmentScores(t_sne, ann_by_level$scores$l1, clf_data$classification.tree)
 #' @export
 plotAssignmentScores <- function(embedding, scores, classification.tree, parent.node="root", build.panel=T, n.col=NULL, n.row=NULL, ...) {
   classificationTreeToDf(classification.tree) %>%
     dplyr::filter(Parent == parent.node) %>% .$Node %>%
-    lapply(function(n) conos:::embeddingPlot(embedding, colors=setNames(scores[, n], rownames(scores)),
+    lapply(function(n) conos::embeddingPlot(embedding, colors=setNames(scores[, n], rownames(scores)),
                                              title=n, color.range=c(0, 1), ...)) %>%
     arrangePlots(build.panel=build.panel, n.row=n.row, n.col=n.col)
 }
@@ -21,7 +40,7 @@ plotGarnettAssignemnts <- function(embedding, assignment, plot.ambig=T, show.leg
       groups <- droplevels(groups[!(groups %in% c("None", "Ambiguous"))])
     }
 
-    conos:::embeddingPlot(
+    conos::embeddingPlot(
       embedding, groups=groups, show.legend=show.legend, mark.groups=mark.groups, title=n,
       plot.theme=ggplot2::theme(legend.background=ggplot2::element_rect(fill=ggplot2::alpha("white", 0.2))), ...)
   })
@@ -30,7 +49,7 @@ plotGarnettAssignemnts <- function(embedding, assignment, plot.ambig=T, show.leg
 #' @export
 plotTypeMarkers <- function(embedding, count.matrix, cell.type, marker.list, show.legend=T, ...) {
   plot.func <- function(gene, title) {
-    conos:::embeddingPlot(embedding, colors=count.matrix[,gene], show.legend=show.legend, title=title, ...)
+    conos::embeddingPlot(embedding, colors=count.matrix[,gene], show.legend=show.legend, title=title, ...)
   }
 
   res <- marker.list[[cell.type]]$expressed %>% intersect(colnames(count.matrix)) %>%
@@ -90,7 +109,7 @@ plotSubtypeMarkers <- function(embedding, count.matrix, parent.type="root", clf.
   titles <- mapply(function(n,ts) paste0(n, ": ", ts), names(markers), lapply(markers, paste, collapse=", "))
   plots <- mapply(function(gene, title) {
     expr.vec <- if (gene %in% colnames(count.matrix)) count.matrix[,gene] else NA
-    conos:::embeddingPlot(embedding, colors=expr.vec, show.legend=show.legend, title=title, ...)
+    conos::embeddingPlot(embedding, colors=expr.vec, show.legend=show.legend, title=title, ...)
   },names(markers), titles, SIMPLIFY=F
   )
 
@@ -100,10 +119,10 @@ plotSubtypeMarkers <- function(embedding, count.matrix, parent.type="root", clf.
 #' @export
 plotAnnotationByLevels <- function(embedding, annotation.by.level, clusters=NULL, build.panel=T, n.col=NULL, n.row=NULL, ...) {
   res <- lapply(1:length(annotation.by.level),
-                function(i) conos:::embeddingPlot(embedding, groups=annotation.by.level[[i]], title=paste("Level", i), ...))
+                function(i) conos::embeddingPlot(embedding, groups=annotation.by.level[[i]], title=paste("Level", i), ...))
 
   if (!is.null(clusters)) {
-    res[[length(res) + 1]] <- conos:::embeddingPlot(embedding, groups=clusters, title="Clustering", ...)
+    res[[length(res) + 1]] <- conos::embeddingPlot(embedding, groups=clusters, title="Clustering", ...)
   }
 
   return(arrangePlots(res, build.panel=build.panel, n.row=n.row, n.col=n.col))
@@ -118,7 +137,7 @@ plotConfidenceByLevels <- function(embedding, annotation.by.level, scores, show.
     getAnnotationConfidence(annotation.by.level[[n]], scores[[n]]))
 
   res <- lapply(1:length(conf.per.level), function(i)
-    conos:::embeddingPlot(embedding, colors=conf.per.level[[i]], title=paste("Level", i),
+    conos::embeddingPlot(embedding, colors=conf.per.level[[i]], title=paste("Level", i),
                           legend.title="Confidence", show.legend=T, color.range=c(0, 1), ...))
 
   return(res)

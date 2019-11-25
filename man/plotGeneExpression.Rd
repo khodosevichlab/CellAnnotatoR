@@ -14,6 +14,12 @@ plotGeneExpression(genes, embedding, cm, build.panel = T, n.col = NULL,
 
 \item{cm}{count matrix with genes as columns}
 
+\item{build.panel}{combine individual plots to a single panel}
+
+\item{n.col}{number of columns in the panel}
+
+\item{n.row}{number of rows in the panel}
+
 \item{...}{Arguments passed on to \code{conos::embeddingPlot}
 \describe{
   \item{embedding}{two-column matrix with x and y coordinates of the embedding, rownames contain cell names and are used to match coordinates with groups or colors}

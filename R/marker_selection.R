@@ -190,8 +190,6 @@ preSelectMarkerCandidates <- function(de.info, ...) {
   return(markers.per.type)
 }
 
-#### Version 2
-
 getTopNegativeGenes <- function(pos.gene, cell.type, cm.norm, annotation, markers.per.type, s.info, pos.score.changes, n.neg.genes, score.change.threshold) {
   c.max.scores <- pmax(s.info$max.pos.scores[,cell.type], cm.norm[, pos.gene])
   cm.norm.neg <- cm.norm[, markers.per.type$negative[[cell.type]], drop=F]
