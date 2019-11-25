@@ -47,12 +47,16 @@ plotSubtypeMarkers <- function(embedding, count.matrix, parent.type="root", clf.
   if (length(setdiff(marker.type, c("expressed", "not_expressed"))) > 0)
     stop("Unknown marker.type")
 
-  if (is.null(clf.data) && (is.null(clf.tree) || is.null(marker.list)))
-    stop("Either clf.data or both clf.tree and marker.list must be provided")
+  if (is.null(clf.data) && is.null(marker.list))
+    stop("Either clf.data or marker.list must be provided")
 
   if (!is.null(clf.data)) {
     clf.tree <- clf.data$classification.tree
     marker.list <- clf.data$marker.list
+  }
+
+  if (is.null(clf.tree)) {
+    clf.tree <- createClassificationTree(marker.list)
   }
 
   markers <- list()
@@ -221,4 +225,22 @@ plotExpressionViolinMap <- function(markers, count.matrix, annotation, x.text.an
       panel.spacing=ggplot2::unit(0, "pt"), panel.grid=ggplot2::element_blank(),
       axis.text.y=ggplot2::element_blank(), axis.ticks=ggplot2::element_blank(),
       axis.text.x=ggplot2::element_text(angle=x.text.angle, hjust=1), legend.position="none")
+}
+
+#' Plot gene expression on cell embedding
+#'
+#' @param genes vector of gene names
+#' @param embedding cell embedding
+#' @param cm count matrix with genes as columns
+#' @inheritParams arrangePlots
+#' @inheritDotParams conos::embeddingPlot
+#' @export
+plotGeneExpression <- function(genes, embedding, cm, build.panel=T, n.col=NULL, n.row=NULL, ...) {
+  res <- genes %>% setNames(., .) %>%
+    lapply(function(g) conos::embeddingPlot(embedding, colors=cm[, g], title=g, ...))
+
+  if (length(res) == 1)
+    return(res[[1]])
+
+  return(arrangePlots(res, build.panel=build.panel, n.col=n.col, n.row=n.row))
 }
