@@ -17,8 +17,6 @@ simplifyHierarchy <- function(branch) {
 appendHierarchyBranch <- function(branch, parent.name) {
   branch %<>% simplifyHierarchy()
   is.leaf <- (sapply(branch, is.character) & (sapply(branch, length) == 1))
-  # if (any((sapply(names(branch), nchar) > 0) != !is.leaf))
-  #   stop("Can't parse ", parent.name, " branch: only lists must have names")
 
   current.nodes <- c(unlist(branch[is.leaf], use.names=F), names(branch[!is.leaf])) %>%
     setNames(., .) %>% lapply(function(x) list(expressed=c(), not_expressed=c(), parent=parent.name))
@@ -28,6 +26,20 @@ appendHierarchyBranch <- function(branch, parent.name) {
   return(c(current.nodes, sub.branches))
 }
 
+#' Hierarchy to Classification Tree
+#' @description Convert list with cell type hierarchy to classification tree in igraph format
+#' @param hierarchy list of cell types, where each element represent a cell type. If cell type has some subtypes it's represented as another list, otherwise it's just a string
+#' @inherit createClassificationTree return
+#' @examples
+#'   hierarchy <- list(
+#'     Alveolar=c("AT1 Cell", "AT2 Cell"),
+#'     B=c("B Cell", "Ig-producing B cell"),
+#'     NK_T=list(`T`=c("Dividing T cells", "T Cell_Cd8b1 high", "Nuocyte"), "NK Cell"),
+#'     "Endothelial"
+#'   )
+#'
+#'   clf_tree <- hierarchyToClassificationTree(hierarchy)
+#'
 #' @export
 hierarchyToClassificationTree <- function(hierarchy) {appendHierarchyBranch(hierarchy, "root") %>% createClassificationTree()}
 
@@ -38,9 +50,21 @@ splitClusteringDf <- function(df) {
   return(split(df, df[,1]) %>% lapply(function(x) splitClusteringDf(x[,2:ncol(x)])))
 }
 
+#' Derive Hierarchy
+#' @description derive hierarchy from the data using hclust
+#' @param feature.matrix matrix where rows represent cells and columns represent either genes or some embedded space (e.g. PCA)
+#' @param annotation vector with cell type label per cell
+#' @param dist.method method for pairwise distance estimation. Either "cor" for correlation distance or any method supported by `dist` function
+#' @param max.depth maximal depth of the hierarchy
+#' @return list with cell type hierarchy
+#' @examples
+#'   hierarchy <- deriveHierarchy(pca_mtx, annotation, max.depth=3)
+#'   clf_tree <- hierarchyToClassificationTree(hierarchy)
+#'   plotTypeHierarchy(clf_tree)
+#'
 #' @export
 deriveHierarchy <- function(feature.matrix, annotation, dist.method="cor", max.depth=2) {
-  feature.matrix %<>% as("dgCMatrix") %>% conos:::collapseCellsByType(annotation, min.cell.count=0)
+  feature.matrix %<>% as("dgCMatrix") %>% conos:::collapseCellsByType(groups=annotation, min.cell.count=0)
 
   if (dist.method == "cor") {
     c.dist <- (1 - cor(Matrix::t(feature.matrix))) %>% as.dist()
