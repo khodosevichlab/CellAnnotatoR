@@ -2,7 +2,7 @@
 % Please edit documentation in R/functions.R
 \name{assignCellsByScores}
 \alias{assignCellsByScores}
-\title{Assign cell types for each cell based on type scores. Optionally uses `clusters` to expand annotation.}
+\title{Assign Cells By Scores}
 \usage{
 assignCellsByScores(graph, clf.data, score.info = NULL,
   clusters = NULL, verbose = 0, uncertainty.thresholds = c(coverage =
@@ -16,7 +16,7 @@ Use `graph=NULL` to skip graph diffusion step and get raw score annotation (usef
 
 \item{score.info}{cell type scores from `getMarkerScoreInfo` function. Re-estimated if NULL}
 
-\item{clusters}{cluster assignment of data. Used to expand annotation on these clusters.}
+\item{clusters}{vector with cluster labels named by cell ids. Used to expand annotation on these clusters.}
 
 \item{verbose}{verbosity level (from 0 to 2)}
 
@@ -26,11 +26,17 @@ Use `graph=NULL` to skip graph diffusion step and get raw score annotation (usef
 }}
 }
 \value{
-list with parameters:
-  - annotation: annotation per level
-  - scores: assignment scores per leve
-  - annotation.filt: the same as annotation, but cells, which don't pass QC are assigned to NA class
+list with parameters:\itemize{
+  \item{annotation: annotation per level}
+  \item{scores: assignment scores per level}
+  \item{annotation.filt: the same as annotation, but cells, which don't pass QC are assigned to NA class}
+}
 }
 \description{
 Assign cell types for each cell based on type scores. Optionally uses `clusters` to expand annotation.
+}
+\examples{
+  clf_data <- getClassificationData(cm, marker_path)
+  ann_by_level <- assignCellsByScores(graph, clf_data, clusters=clusters)
+
 }

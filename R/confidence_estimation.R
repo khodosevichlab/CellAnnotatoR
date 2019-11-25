@@ -3,6 +3,18 @@ getAnnotationConfidence <- function(annotation, scores) {
     setNames(rownames(scores)) %>% unlist()
 }
 
+#' Score Per Cell Uncertainty
+#' @description Score uncertainty per each cell
+#' @param annotation assigned annotation labels. Can be obtrained with `assignCellsByScores`.
+#' @param scores.norm assignment scores. Can be obtrained with `assignCellsByScores`.
+#' @param score.info list of marker scores per cell type. Can be obtained with `getMarkerScoreInfo`
+#' @param cur.types subset of types used to measure uncertainty. Default: all values presented in annotation
+#' @param coverage.max.quantile all coverage values above this quantille are winsorized
+#' @return list of scores with elements:\itemize{
+#'   \item{positive: uncertainty based on conflicting positive markers}
+#'   \item{negative: uncertainty based on large expression of negative markers}
+#'   \item{coverage: uncertainty based on low coverage}
+#' }
 scorePerCellUncertainty <- function(annotation, scores.norm, score.info, cur.types=unique(annotation), coverage.max.quantile=0.75) {
   positive <- getAnnotationConfidence(annotation, scores.norm[names(annotation),])
 
@@ -22,7 +34,17 @@ scorePerCellUncertainty <- function(annotation, scores.norm, score.info, cur.typ
   ))
 }
 
+#' Score Cell Uncertainty Per Level
+#' @description Estimate uncertainty scores per annotation level
+#' @param ann.info.per.level annotation info per level. Result of `assignCellsByScores`.
+#' @inheritParams scorePerCellUncertainty
+#' @param verbose show progress bar for estimation
 #' @inheritDotParams scorePerCellUncertainty cur.types coverage.max.quantile
+#' @return Uncertainty per level for each cell
+#' @examples
+#'   score_info <- getMarkerScoreInfo(clf_data)
+#'   unc_info <- scoreCellUncertaintyPerLevel(ann_by_level, score_info)
+#'
 #' @export
 scoreCellUncertaintyPerLevel <- function(ann.info.per.level, score.info, verbose=F, ...) {
   names(ann.info.per.level[[1]]) %>% setNames(., .) %>% plapply(function(n)
@@ -38,6 +60,16 @@ scorePerClusterUncertainty <- function(unc.per.cell, clusters) {
   ))
 }
 
+#' Score Cluster Uncertainty Per Level
+#' @description Score uncertainty for each cluster per level
+#' @param cell.uncertainty.per.level uncertainty per cell per level. Can be obtained from `scoreCellUncertaintyPerLevel`
+#' @param clusters vector with cluster label for each cell
+#' @return Uncertainty per level for each cluster
+#' @examples
+#'   score_info <- getMarkerScoreInfo(clf_data)
+#'   unc_info <- scoreCellUncertaintyPerLevel(ann_by_level, score_info)
+#'   unc_per_clust <- scoreClusterUncertaintyPerLevel(unc_info, clusters)
+#'
 #' @export
 scoreClusterUncertaintyPerLevel <- function(cell.uncertainty.per.level, clusters) {
   lapply(cell.uncertainty.per.level, scorePerClusterUncertainty, clusters)

@@ -42,11 +42,13 @@ diffuseScorePerType <- function(scores.per.type, graph, parents, cbs.per.type, v
     verbose=(verbose > 0), n.cores=n.cores)
 }
 
-#' Run diffusion on graph
-#'
+#' Diffuse Graph
+#' @description Run diffusion on graph
+#' @param graph graph to diffuse on
+#' @param scores table of scores
 #' @param fading fading level for graph diffusion
 #' @param fading.const constant in exponent for graph diffusion
-#' @param score.fixing.threshold threshold for a label to be considered true
+#' @param score.fixing.threshold threshold for a label to be considered certain. Such labels can't be changed during diffusion.
 #' @param verbose print progress bar
 #' @param tol tolerance for diffusion stopping
 diffuseGraph <- function(graph, scores, fading=10, fading.const=0.5, score.fixing.threshold=0.8,
@@ -76,19 +78,25 @@ diffuseGraph <- function(graph, scores, fading=10, fading.const=0.5, score.fixin
   return(res)
 }
 
-#' Assign cell types for each cell based on type scores. Optionally uses `clusters` to expand annotation.
+#' Assign Cells By Scores
+#' @description Assign cell types for each cell based on type scores. Optionally uses `clusters` to expand annotation.
 #'
 #' @param graph cell graph from Seurat, Pagoda2 or some other tool. Can be either in igraph or adjacency matrix format.
 #'    Use `graph=NULL` to skip graph diffusion step and get raw score annotation (useful when debug marker genes).
-#' @param clf.data classification data from `getClassificationData`
 #' @param score.info cell type scores from `getMarkerScoreInfo` function. Re-estimated if NULL
-#' @param clusters cluster assignment of data. Used to expand annotation on these clusters.
+#' @param clusters vector with cluster labels named by cell ids. Used to expand annotation on these clusters.
 #' @param verbose verbosity level (from 0 to 2)
+#' @inheritParams getMarkerScoreInfo
 #' @inheritDotParams diffuseScorePerType
-#' @return list with parameters:
-#'   - annotation: annotation per level
-#'   - scores: assignment scores per leve
-#'   - annotation.filt: the same as annotation, but cells, which don't pass QC are assigned to NA class
+#' @return list with parameters:\itemize{
+#'   \item{annotation: annotation per level}
+#'   \item{scores: assignment scores per level}
+#'   \item{annotation.filt: the same as annotation, but cells, which don't pass QC are assigned to NA class}
+#' }
+#'
+#' @examples
+#'   clf_data <- getClassificationData(cm, marker_path)
+#'   ann_by_level <- assignCellsByScores(graph, clf_data, clusters=clusters)
 #'
 #' @export
 assignCellsByScores <- function(graph, clf.data, score.info=NULL, clusters=NULL, verbose=0, uncertainty.thresholds=c(coverage=0.5, negative=0.5, positive=0.75), ...) {
@@ -162,8 +170,16 @@ assignCellsByScores <- function(graph, clf.data, score.info=NULL, clusters=NULL,
 
 ## Score assignment
 
+#' Normalize TF-IDF with Features
+#' @description Normalize `cm` matrix using TF-IDF and then column-wise min-max scaling
+#'
+#' @param cm matrix to normalize. Rows are observations (e.g. cells) and columns are features (e.g. genes)
+#' @param max.quantile quantile to be used for max estimation during scaling
+#' @return normalized matrix of the same shape as `cm`
+#'
 #' @export
 normalizeTfIdfWithFeatures <- function(cm, max.quantile=0.95, max.smooth=1e-10) {
+  cm %<>% as("dgCMatrix")
   cm@x <- cm@x / rep(Matrix::colSums(cm), diff(cm@p))
   cm <- Matrix::t(cm)
 
@@ -179,6 +195,10 @@ normalizeTfIdfWithFeatures <- function(cm, max.quantile=0.95, max.smooth=1e-10) 
   return(tf.idf)
 }
 
+#' Get Marker Score Info
+#' @description estimate info, neccessary for scoring of cells by cell types
+#'
+#' @param clf.data classification data from `getClassificationData`
 #' @export
 getMarkerScoreInfo <- function(clf.data, ...) {
   lapply(clf.data$marker.list, getCellTypeScoreInfo, clf.data$cm, ...)
@@ -192,9 +212,6 @@ mergeScores <- function(score.name, scores, aggr.func=c) {
 #' @export
 mergeScoreInfos <- function(score.infos, verbose=F) {
   names(score.infos[[1]]) %>% setNames(., .) %>% lapply(mergeScores, score.infos)
-  # names(score.infos[[1]]) %>% setNames(., .) %>%
-  #   plapply(function(tn) names(score.infos[[1]][[1]]) %>% setNames(., .) %>% lapply(function(sn)
-  #     lapply(score.infos, function(si) si[[tn]][[sn]]) %>% Reduce(c, .)), verbose=verbose)
 }
 
 mergeAnnotationInfos <- function(ann.infos) {
@@ -205,6 +222,18 @@ mergeAnnotationInfos <- function(ann.infos) {
   ))
 }
 
+#' Get Cell Type Score Info
+#' @description estimate info, neccessary for scoring of cells by cell types for the specified cell type
+#'
+#' @param markers element of marker list. List with fields `expressed` and `not_expressed`
+#' @param tf.idf TF-IDF normalized matrix. Can be obtained with `normalizeTfIdfWithFeatures`
+#' @param aggr if scores must be aggregated for the whole cell type or returned for each marker separately
+#' @return list with score info:\itemize{
+#'   \item{scores.raw: scores from positive markers}
+#'   \item{mult: score multiplier, estimated with negative markers}
+#'   \item{max.positive: maximal expression of positive markers. Used for estimation of negative scores}
+#'   \item{scores: final scores. Equal to `scores * score.mult`}
+#' }
 getCellTypeScoreInfo <- function(markers, tf.idf, aggr=T) {
   expressed.genes <- intersect(markers$expressed, colnames(tf.idf))
   if (length(expressed.genes) == 0) {
@@ -379,7 +408,7 @@ getAnnotationPerCluster <- function(annotation, clusters) {
 
 ## Validation
 
-rateMetricssPerType <- function(ann.res, ann.reference) {
+rateMetricsPerType <- function(ann.res, ann.reference) {
   ann.reference <- ann.reference[!is.na(ann.reference)]
   ann.res <- ann.res[names(ann.reference)]
 

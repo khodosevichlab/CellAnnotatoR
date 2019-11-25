@@ -2,18 +2,22 @@
 % Please edit documentation in R/functions.R
 \name{diffuseGraph}
 \alias{diffuseGraph}
-\title{Run diffusion on graph}
+\title{Diffuse Graph}
 \usage{
 diffuseGraph(graph, scores, fading = 10, fading.const = 0.5,
   score.fixing.threshold = 0.8, verbose = FALSE, max.iters = 1000,
   tol = 0.001)
 }
 \arguments{
+\item{graph}{graph to diffuse on}
+
+\item{scores}{table of scores}
+
 \item{fading}{fading level for graph diffusion}
 
 \item{fading.const}{constant in exponent for graph diffusion}
 
-\item{score.fixing.threshold}{threshold for a label to be considered true}
+\item{score.fixing.threshold}{threshold for a label to be considered certain. Such labels can't be changed during diffusion.}
 
 \item{verbose}{print progress bar}
 
