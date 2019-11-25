@@ -86,7 +86,7 @@ c("Cldn10", "Igfbpl1", "Ccnd2", "Nes") %>%
   plotGeneExpression(p2$embeddings$PCA$UMAP, p2$counts)
 ```
 
-If you want to use panel of violinplots instead, you can use `plotExpressionViolinMap(genes, cm.matrix, annotation, ...)`. It suits better for large panels of markers:
+If you want to use panel of violinplots instead, you can use `plotExpressionViolinMap(genes, cm, annotation)`. It suits better for large panels of markers:
 
 ```R
 c("Cldn10", "Igfbpl1", "Ccnd2", "Nes", "Id4", "Ascl1", "Egfr", "Serpine2", "Dcx", "Tubb3",
