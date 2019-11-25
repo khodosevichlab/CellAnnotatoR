@@ -8,6 +8,10 @@ NULL
   library.dynam.unload("CellAnnotatoR", libpath)
 }
 
+#' Parallel Lapply
+#' @description parallel, optionally verbose lapply
+#' @param n.cores number of cores to use
+#' @param verbose show progress bar
 plapply <- function(..., n.cores=1, verbose=F) {
   if (verbose)
     return(pbapply::pblapply(..., cl=n.cores))
@@ -175,7 +179,7 @@ assignCellsByScores <- function(graph, clf.data, score.info=NULL, clusters=NULL,
 #'
 #' @param cm matrix to normalize. Rows are observations (e.g. cells) and columns are features (e.g. genes)
 #' @param max.quantile quantile to be used for max estimation during scaling
-#' @return normalized matrix of the same shape as `cm`
+#' @return Normalized matrix of the same shape as `cm`
 #'
 #' @export
 normalizeTfIdfWithFeatures <- function(cm, max.quantile=0.95, max.smooth=1e-10) {
@@ -199,19 +203,35 @@ normalizeTfIdfWithFeatures <- function(cm, max.quantile=0.95, max.smooth=1e-10) 
 #' @description estimate info, neccessary for scoring of cells by cell types
 #'
 #' @param clf.data classification data from `getClassificationData`
+#' @inheritDotParams getCellTypeScoreInfo aggr
+#' @return List of score info for each cell type. See `CellAnnotatoR:::getCellTypeScoreInfo` for more info
 #' @export
 getMarkerScoreInfo <- function(clf.data, ...) {
   lapply(clf.data$marker.list, getCellTypeScoreInfo, clf.data$cm, ...)
 }
 
-mergeScores <- function(score.name, scores, aggr.func=c) {
-  names(scores[[1]][[score.name]]) %>% setNames(., .) %>% lapply(function(n)
-    lapply(scores, `[[`, c(score.name, n)) %>% Reduce(aggr.func, .))
+#' Merge Scores
+#' @param score.name type of score to merge
+#' @param score.infos scoring info per cell per cell type
+mergeScores <- function(score.name, score.infos, aggr.func=c) {
+  names(score.infos[[1]][[score.name]]) %>% setNames(., .) %>% lapply(function(n)
+    lapply(score.infos, `[[`, c(score.name, n)) %>% Reduce(aggr.func, .))
 }
 
+#' Merge Score Infos
+#' @description merge score information from multiple datasets
+#'
+#' @inheritParams mergeScores
+#' @inheritParams plapply
+#' @inherit getMarkerScoreInfo return
+#' @examples
+#'   clf_datas <- lapply(cms, getClassificationData, marker_path)
+#'   score_infos <- lapply(clf_datas, getMarkerScoreInfo)
+#'   all_score_info <- mergeScoreInfos(score_infos, verbose=T)
+#'
 #' @export
 mergeScoreInfos <- function(score.infos, verbose=F) {
-  names(score.infos[[1]]) %>% setNames(., .) %>% lapply(mergeScores, score.infos)
+  names(score.infos[[1]]) %>% setNames(., .) %>% plapply(mergeScores, score.infos, verbose=verbose)
 }
 
 mergeAnnotationInfos <- function(ann.infos) {
@@ -272,19 +292,17 @@ normalizeScores <- function(scores, min.val=1e-10) {
 
 #' Return initial scores of each cell type for each cell
 #'
-#' @param clf classification data from `getClassificationData`
 #' @param score.info pre-calculated score info from `getMarkerScoreInfo`
 #' @param aggr should individual gene scores be aggregated per cell type? If `FALSE`,
 #' returns list of data.frames, showing scores of each gene for each cell.
 #' Useful for debugging list of markers.
+#' @inheritParams getMarkerScoreInfo
 #'
 #' @return data.frame with rows corresponding to cells and columns corresponding to cell types.
-#' Values are cell type scores, normalized per level of hierarchy
-#'
-#' @export
-getMarkerScoresPerCellType <- function(clf, score.info=NULL, aggr=T) {
+#'   Values are cell type scores, normalized per level of hierarchy
+getMarkerScoresPerCellType <- function(clf.data, score.info=NULL, aggr=T) {
   if (is.null(score.info)) {
-    score.info <- getMarkerScoreInfo(clf, aggr=aggr)
+    score.info <- getMarkerScoreInfo(clf.data, aggr=aggr)
   }
 
   scores <- lapply(score.info, `[[`, "scores")
@@ -303,12 +321,22 @@ getMarkerScoresPerCellType <- function(clf, score.info=NULL, aggr=T) {
 
 ## Utils
 
+#' Get Annotation Per Parent
+#' @description for each cell type get annotation of its subtypes on the next hierarchy level
+#'
+#' @inheritParams classificationTreeToDf
+#' @inheritParams mergeAnnotationToLevel
+#' @return list of sub-annotations named by parent types
+#' @examples
+#'   ann_by_parent <- getAnnotationPerParent(clf_data$classification.tree, annotation)
 #' @export
-getAnnotationPerParent <- function(clf.tree, annotation) {
-  classificationTreeToDf(clf.tree) %>% split(.$Parent) %>% lapply(function(df)
-    mergeAnnotationToLevel(df$PathLen[1], annotation, clf.tree) %>% .[. %in% df$Node])
+getAnnotationPerParent <- function(classification.tree, annotation) {
+  classificationTreeToDf(classification.tree) %>% split(.$Parent) %>% lapply(function(df)
+    mergeAnnotationToLevel(df$PathLen[1], annotation, classification.tree) %>% .[. %in% df$Node])
 }
 
+#' Merge Annotation to Level
+#' @param annotation annotation for high-resolution. Cell type names must correspond to nodes in the `classification.tree`
 mergeAnnotationToLevel <- function(level, annotation, classification.tree) {
   parent.types <- classificationTreeToDf(classification.tree) %$% Node[PathLen == level] %>% unique()
   if (length(parent.types) == 0) {
@@ -330,6 +358,16 @@ mergeAnnotationToLevel <- function(level, annotation, classification.tree) {
   return(setNames(type.map[annotation], names(annotation)))
 }
 
+#' Merge Annotation By Levels
+#' @description merge provided annotation using `classification.tree` to get annotations for different levels of hierarchy
+#'
+#' @inheritParams classificationTreeToDf
+#' @inheritParams mergeAnnotationToLevel
+#' @return list of annotations where each element correspond to some hierarchy level
+#'
+#' @examples
+#'   ann_by_level <- mergeAnnotationByLevels(annotation, clf_data$classification.tree)
+#'
 #' @export
 mergeAnnotationByLevels <- function(annotation, classification.tree) {
   max.level <- classificationTreeToDf(classification.tree)$PathLen %>% max()
@@ -338,6 +376,8 @@ mergeAnnotationByLevels <- function(annotation, classification.tree) {
   return(anns)
 }
 
+#' Classification Tree to DataFrame
+#' @param classification.tree cell type hierarchy represented by graph. Part of `clf_data` object from `getClassificationData`
 classificationTreeToDf <- function(classification.tree) {
   igraph::V(classification.tree)$name %>% .[. != "root"] %>%
     lapply(function(cn) {

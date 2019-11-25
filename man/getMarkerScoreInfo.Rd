@@ -8,6 +8,14 @@ getMarkerScoreInfo(clf.data, ...)
 }
 \arguments{
 \item{clf.data}{classification data from `getClassificationData`}
+
+\item{...}{Arguments passed on to \code{getCellTypeScoreInfo}
+\describe{
+  \item{aggr}{if scores must be aggregated for the whole cell type or returned for each marker separately}
+}}
+}
+\value{
+List of score info for each cell type. See `CellAnnotatoR:::getCellTypeScoreInfo` for more info
 }
 \description{
 estimate info, neccessary for scoring of cells by cell types

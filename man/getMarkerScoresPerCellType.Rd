@@ -4,10 +4,10 @@
 \alias{getMarkerScoresPerCellType}
 \title{Return initial scores of each cell type for each cell}
 \usage{
-getMarkerScoresPerCellType(clf, score.info = NULL, aggr = T)
+getMarkerScoresPerCellType(clf.data, score.info = NULL, aggr = T)
 }
 \arguments{
-\item{clf}{classification data from `getClassificationData`}
+\item{clf.data}{classification data from `getClassificationData`}
 
 \item{score.info}{pre-calculated score info from `getMarkerScoreInfo`}
 
@@ -17,7 +17,7 @@ Useful for debugging list of markers.}
 }
 \value{
 data.frame with rows corresponding to cells and columns corresponding to cell types.
-Values are cell type scores, normalized per level of hierarchy
+  Values are cell type scores, normalized per level of hierarchy
 }
 \description{
 Return initial scores of each cell type for each cell

@@ -12,7 +12,7 @@ normalizeTfIdfWithFeatures(cm, max.quantile = 0.95, max.smooth = 1e-10)
 \item{max.quantile}{quantile to be used for max estimation during scaling}
 }
 \value{
-normalized matrix of the same shape as `cm`
+Normalized matrix of the same shape as `cm`
 }
 \description{
 Normalize `cm` matrix using TF-IDF and then column-wise min-max scaling
