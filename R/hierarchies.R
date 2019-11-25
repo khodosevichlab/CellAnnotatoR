@@ -1,3 +1,44 @@
+#' Merge Annotation to Level
+#' @param annotation annotation for high-resolution. Cell type names must correspond to nodes in the `classification.tree`
+mergeAnnotationToLevel <- function(level, annotation, classification.tree) {
+  parent.types <- classificationTreeToDf(classification.tree) %$% Node[PathLen == level] %>% unique()
+  if (length(parent.types) == 0) {
+    warning("Nothing to merge at level ", level)
+    return(annotation)
+  }
+
+  if (is.factor(annotation)) {
+    annotation <- setNames(as.character(annotation), names(annotation))
+  }
+
+  type.map <- unique(annotation) %>% setNames(., .)
+  for (pt in parent.types) {
+    for (st in getAllSubtypes(pt, classification.tree)) {
+      type.map[st] = pt
+    }
+  }
+
+  return(setNames(type.map[annotation], names(annotation)))
+}
+
+#' Merge Annotation By Levels
+#' @description merge provided annotation using `classification.tree` to get annotations for different levels of hierarchy
+#'
+#' @inheritParams classificationTreeToDf
+#' @inheritParams mergeAnnotationToLevel
+#' @return list of annotations where each element correspond to some hierarchy level
+#'
+#' @examples
+#'   ann_by_level <- mergeAnnotationByLevels(annotation, clf_data$classification.tree)
+#'
+#' @export
+mergeAnnotationByLevels <- function(annotation, classification.tree) {
+  max.level <- classificationTreeToDf(classification.tree)$PathLen %>% max()
+  anns <- 1:max.level %>% setNames(., paste0("l", .)) %>%
+    lapply(mergeAnnotationToLevel, annotation, classification.tree)
+  return(anns)
+}
+
 simplifyHierarchy <- function(branch) {
   if (!is.list(branch))
     return(branch)
