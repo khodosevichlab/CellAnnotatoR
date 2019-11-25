@@ -33,8 +33,16 @@ plotAssignmentScores <- function(embedding, scores, classification.tree, parent.
     arrangePlots(build.panel=build.panel, n.row=n.row, n.col=n.col)
 }
 
+#' Plot Type Markers
+#' @description plot markers for the specified `cell.type`
+#' @param count.matrix gene expression matrix with genes by columns and cells by rows
+#' @param cell.type cell type for which the markers must be plotted
+#' @param marker.list list of markers per cell type. Can be obtained with `parseMarkerFile`
+#' @inheritParams conos::embeddingPlot
+#' @inheritParams arrangePlots
+#' @inheritDotParams conos::embeddingPlot
 #' @export
-plotTypeMarkers <- function(embedding, count.matrix, cell.type, marker.list, show.legend=T, ...) {
+plotTypeMarkers <- function(embedding, count.matrix, cell.type, marker.list, show.legend=T, build.panel=T, n.col=NULL, n.row=NULL, ...) {
   plot.func <- function(gene, title) {
     conos::embeddingPlot(embedding, colors=count.matrix[,gene], show.legend=show.legend, title=title, ...)
   }
@@ -42,11 +50,14 @@ plotTypeMarkers <- function(embedding, count.matrix, cell.type, marker.list, sho
   res <- marker.list[[cell.type]]$expressed %>% intersect(colnames(count.matrix)) %>%
     lapply(function(g) plot.func(g, paste0(g, "+"))) %>%
     c(marker.list[[cell.type]]$not_expressed %>% intersect(colnames(count.matrix)) %>%
-        lapply(function(g) plot.func(g, paste0(g, "-"))))
+        lapply(function(g) plot.func(g, paste0(g, "-")))) %>%
+    arrangePlots(build.panel=build.panel, n.row=n.row, n.col=n.col)
 
   return(res)
 }
 
+#' Extract Markers From Subtypes
+#' @param parent.type cell type for which the markers of the subtypes must be plotted
 extractMarkersFromSubtypes <- function(parent.type="root", clf.data=NULL, clf.tree=NULL, marker.list=NULL, count.matrix=NULL,
                                        max.depth=NULL, drop.missing=T, marker.type=c("expressed", "not_expressed")) {
   if (length(setdiff(marker.type, c("expressed", "not_expressed"))) > 0)
@@ -87,6 +98,16 @@ extractMarkersFromSubtypes <- function(parent.type="root", clf.data=NULL, clf.tr
   return(markers)
 }
 
+#' Plot Subtype Markers
+#' @description plot markers for all subtypes of the specified `parent.type`
+#' @param count.matrix gene expression matrix with genes by columns and cells by rows
+
+#' @param marker.list list of markers per cell type. Can be obtained with `parseMarkerFile`
+#' @inheritParams conos::embeddingPlot
+#' @inheritParams arrangePlots
+#' @inheritParams plotTypeMarkers
+#' @inheritParams extractMarkersFromSubtypes
+#' @inheritDotParams conos::embeddingPlot
 #' @export
 plotSubtypeMarkers <- function(embedding, count.matrix, parent.type="root", clf.data=NULL, clf.tree=NULL, marker.list=NULL,
                                show.legend=F, max.depth=NULL, build.panel=T, n.col=NULL, n.row=NULL, marker.type=c("expressed", "not_expressed"), ...) {
