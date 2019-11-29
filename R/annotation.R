@@ -295,7 +295,7 @@ getMarkerScoresPerCellType <- function(clf.data, score.info=NULL, aggr=T) {
   if (!aggr)
     return(lapply(scores, as.matrix) %>% lapply(as.data.frame, optional=T))
 
-  clf.nodes <- classificationTreeToDf(clf$classification.tree)
+  clf.nodes <- classificationTreeToDf(clf.data$classification.tree)
   scores %<>% as.data.frame(optional=T)
 
   for (nodes in split(clf.nodes$Node, clf.nodes$PathLen)) {
