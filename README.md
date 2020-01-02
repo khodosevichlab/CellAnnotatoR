@@ -39,9 +39,9 @@ ann_by_level <- assignCellsByScores(graph, clf_data, clusters=clusters)
 plotAnnotationByLevels(emb, ann_by_level$annotation, clusters=clusters, size=0.2, font.size=c(2, 4), shuffle.colors=T)
 ```
 
-See the vignettes for a [Seurat PBMC3k](vignettes/seurat_pbmc3k.md) example and [Conos BM+CB alignment annotation](vignettes/conos_bm_cb.md).
+For quick start see the vignettes for a [Seurat PBMC3k](vignettes/seurat_pbmc3k.md), [Pagoda 2 BM](vignettes/pagoda_bm.md) or [Conos BM+CB alignment](vignettes/conos_bm_cb.md).
 
-Also see [Reference Manual](CellAnnotatoR.pdf) for (almost) full list of functions.
+Also see the [Reference Manual](CellAnnotatoR.pdf) for (almost) full list of functions.
 
 ## Creating annotation file
 
