@@ -4,8 +4,7 @@
 \alias{scoreCellUncertaintyPerLevel}
 \title{Score Cell Uncertainty Per Level}
 \usage{
-scoreCellUncertaintyPerLevel(ann.info.per.level, score.info, verbose = F,
-  ...)
+scoreCellUncertaintyPerLevel(ann.info.per.level, score.info, verbose = F, ...)
 }
 \arguments{
 \item{ann.info.per.level}{annotation info per level. Result of `assignCellsByScores`.}
@@ -14,11 +13,12 @@ scoreCellUncertaintyPerLevel(ann.info.per.level, score.info, verbose = F,
 
 \item{verbose}{show progress bar for estimation}
 
-\item{...}{Arguments passed on to \code{scorePerCellUncertainty}
-\describe{
-  \item{cur.types}{subset of types used to measure uncertainty. Default: all values presented in annotation}
-  \item{coverage.max.quantile}{all coverage values above this quantille are winsorized}
-}}
+\item{...}{
+  Arguments passed on to \code{\link[=scorePerCellUncertainty]{scorePerCellUncertainty}}
+  \describe{
+    \item{\code{cur.types}}{subset of types used to measure uncertainty. Default: all values presented in annotation}
+    \item{\code{coverage.max.quantile}}{all coverage values above this quantille are winsorized}
+  }}
 }
 \value{
 Uncertainty per level for each cell

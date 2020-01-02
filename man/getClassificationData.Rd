@@ -4,9 +4,15 @@
 \alias{getClassificationData}
 \title{Get Classification data}
 \usage{
-getClassificationData(cm, markers, prenormalized = F,
-  data.gene.id.type = "SYMBOL", marker.gene.id.type = "SYMBOL",
-  db = NULL, verbose = F)
+getClassificationData(
+  cm,
+  markers,
+  prenormalized = F,
+  data.gene.id.type = "SYMBOL",
+  marker.gene.id.type = "SYMBOL",
+  db = NULL,
+  verbose = F
+)
 }
 \arguments{
 \item{cm}{gene count matrix with cells by columns and genes by rows. May be in raw, TC-normalized or tf-idf-normalized format (in case of tf-idf, `prenormalized` must be set to `T`)}

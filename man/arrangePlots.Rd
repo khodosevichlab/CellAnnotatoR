@@ -4,7 +4,13 @@
 \alias{arrangePlots}
 \title{Arrange Plots}
 \usage{
-arrangePlots(plot.list, build.panel, n.col = NULL, n.row = NULL)
+arrangePlots(
+  plot.list,
+  build.panel,
+  n.col = NULL,
+  n.row = NULL,
+  title.size = 10
+)
 }
 \arguments{
 \item{plot.list}{list of plots}
@@ -14,6 +20,8 @@ arrangePlots(plot.list, build.panel, n.col = NULL, n.row = NULL)
 \item{n.col}{number of columns in the panel}
 
 \item{n.row}{number of rows in the panel}
+
+\item{title.size}{font size for title of individual plots. Used only if build.panel==T}
 }
 \value{
 panel of plots if `build.panel==T` or `plot.list` otherwise

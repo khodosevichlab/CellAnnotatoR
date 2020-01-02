@@ -4,8 +4,7 @@
 \alias{deriveHierarchy}
 \title{Derive Hierarchy}
 \usage{
-deriveHierarchy(feature.matrix, annotation, dist.method = "cor",
-  max.depth = 2)
+deriveHierarchy(feature.matrix, annotation, dist.method = "cor", max.depth = 2)
 }
 \arguments{
 \item{feature.matrix}{matrix where rows represent cells and columns represent either genes or some embedded space (e.g. PCA)}

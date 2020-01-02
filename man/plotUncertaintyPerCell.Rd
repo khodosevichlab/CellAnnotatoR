@@ -4,42 +4,50 @@
 \alias{plotUncertaintyPerCell}
 \title{Uncertainty scatterplots per cell}
 \usage{
-plotUncertaintyPerCell(embedding, uncertainty.info,
+plotUncertaintyPerCell(
+  embedding,
+  uncertainty.info,
   palette = colorRampPalette(c("gray", "#ffeda0", "#fec44f", "#f03b20")),
-  alpha = 0.3, build.panel = T, n.col = length(uncertainty.info),
-  n.row = NULL, ...)
+  alpha = 0.3,
+  build.panel = T,
+  n.col = length(uncertainty.info),
+  n.row = NULL,
+  title.size = 12,
+  ...
+)
 }
 \arguments{
 \item{build.panel}{join plots to single panel}
 
-\item{...}{Arguments passed on to \code{conos::embeddingPlot}
-\describe{
-  \item{embedding}{two-column matrix with x and y coordinates of the embedding, rownames contain cell names and are used to match coordinates with groups or colors}
-  \item{groups}{vector of cluster labels, names contain cell names}
-  \item{colors}{vector of numbers, which must be shouwn with point colors, names contain cell names. This argument is ignored if groups are provided.}
-  \item{subgroups}{subset of 'groups', selecting the cells for plot. Ignored if 'groups' is NULL}
-  \item{plot.na}{plot points, for which groups / colors are missed (TRUE / FALSE)}
-  \item{min.cluster.size}{labels for all groups with number of cells fewer than this parameter are considered as missed. This argument is ignored if groups aren't provided}
-  \item{mark.groups}{plot cluster labels above points}
-  \item{show.legend}{show legend}
-  \item{alpha}{opacity level [0; 1]}
-  \item{size}{point size}
-  \item{title}{plot title}
-  \item{plot.theme}{theme for the plot}
-  \item{palette}{function, which accepts number of colors and return list of colors (i.e. see colorRampPalette)}
-  \item{color.range}{controls range, in which colors are estimated. Pass "all" to estimate range based on all values of "colors", pass "data" to estimate it only based on colors, presented in the embedding. Alternatively you can pass vector of length 2 with (min, max) values.}
-  \item{font.size}{font size for cluster labels. It can either be single number for constant font size or pair (min, max) for font size depending on cluster size}
-  \item{show.ticks}{show ticks and tick labels}
-  \item{legend.position}{vector with (x, y) positions of the legend}
-  \item{legend.title}{legend title}
-  \item{gradient.range.quantile}{Winsorization quantile for the numeric colors and gene gradient}
-  \item{raster}{should layer with the points be rasterized (TRUE/ FALSE)? Setting of this argument to TRUE is useful when you need to export a plot with large number of points}
-  \item{raster.width}{width of the plot in inches. Ignored if raster == FALSE.}
-  \item{raster.height}{height of the plot in inches. Ignored if raster == FALSE.}
-  \item{raster.dpi}{dpi of the rasterized plot. Ignored if raster == FALSE.}
-  \item{shuffle.colors}{shuffle colors}
-  \item{keep.limits}{Keep axis limits from original plot, useful when plotting subgroups, only meaningful it plot.na=F}
-}}
+\item{...}{
+  Arguments passed on to \code{\link[conos:embeddingPlot]{conos::embeddingPlot}}
+  \describe{
+    \item{\code{embedding}}{two-column matrix with x and y coordinates of the embedding, rownames contain cell names and are used to match coordinates with groups or colors}
+    \item{\code{groups}}{vector of cluster labels, names contain cell names}
+    \item{\code{colors}}{vector of numbers, which must be shouwn with point colors, names contain cell names. This argument is ignored if groups are provided.}
+    \item{\code{subgroups}}{subset of 'groups', selecting the cells for plot. Ignored if 'groups' is NULL}
+    \item{\code{plot.na}}{plot points, for which groups / colors are missed (TRUE / FALSE)}
+    \item{\code{min.cluster.size}}{labels for all groups with number of cells fewer than this parameter are considered as missed. This argument is ignored if groups aren't provided}
+    \item{\code{mark.groups}}{plot cluster labels above points}
+    \item{\code{show.legend}}{show legend}
+    \item{\code{alpha}}{opacity level [0; 1]}
+    \item{\code{size}}{point size}
+    \item{\code{title}}{plot title}
+    \item{\code{plot.theme}}{theme for the plot}
+    \item{\code{palette}}{function, which accepts number of colors and return list of colors (i.e. see colorRampPalette)}
+    \item{\code{color.range}}{controls range, in which colors are estimated. Pass "all" to estimate range based on all values of "colors", pass "data" to estimate it only based on colors, presented in the embedding. Alternatively you can pass vector of length 2 with (min, max) values.}
+    \item{\code{font.size}}{font size for cluster labels. It can either be single number for constant font size or pair (min, max) for font size depending on cluster size}
+    \item{\code{show.ticks}}{show ticks and tick labels}
+    \item{\code{legend.position}}{vector with (x, y) positions of the legend}
+    \item{\code{legend.title}}{legend title}
+    \item{\code{gradient.range.quantile}}{Winsorization quantile for the numeric colors and gene gradient}
+    \item{\code{raster}}{should layer with the points be rasterized (TRUE/ FALSE)? Setting of this argument to TRUE is useful when you need to export a plot with large number of points}
+    \item{\code{raster.width}}{width of the plot in inches. Ignored if raster == FALSE.}
+    \item{\code{raster.height}}{height of the plot in inches. Ignored if raster == FALSE.}
+    \item{\code{raster.dpi}}{dpi of the rasterized plot. Ignored if raster == FALSE.}
+    \item{\code{shuffle.colors}}{shuffle colors}
+    \item{\code{keep.limits}}{Keep axis limits from original plot, useful when plotting subgroups, only meaningful it plot.na=F}
+  }}
 }
 \description{
 Uncertainty scatterplots per cell

@@ -4,10 +4,16 @@
 \alias{extractMarkersFromSubtypes}
 \title{Extract Markers From Subtypes}
 \usage{
-extractMarkersFromSubtypes(parent.type = "root", clf.data = NULL,
-  clf.tree = NULL, marker.list = NULL, count.matrix = NULL,
-  max.depth = NULL, drop.missing = T, marker.type = c("expressed",
-  "not_expressed"))
+extractMarkersFromSubtypes(
+  parent.type = "root",
+  clf.data = NULL,
+  clf.tree = NULL,
+  marker.list = NULL,
+  count.matrix = NULL,
+  max.depth = NULL,
+  drop.missing = T,
+  marker.type = c("expressed", "not_expressed")
+)
 }
 \arguments{
 \item{parent.type}{cell type for which the markers of the subtypes must be plotted}

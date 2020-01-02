@@ -4,8 +4,13 @@
 \alias{scorePerCellUncertainty}
 \title{Score Per Cell Uncertainty}
 \usage{
-scorePerCellUncertainty(annotation, scores.norm, score.info,
-  cur.types = unique(annotation), coverage.max.quantile = 0.75)
+scorePerCellUncertainty(
+  annotation,
+  scores.norm,
+  score.info,
+  cur.types = unique(annotation),
+  coverage.max.quantile = 0.75
+)
 }
 \arguments{
 \item{annotation}{assigned annotation labels. Can be obtrained with `assignCellsByScores`.}

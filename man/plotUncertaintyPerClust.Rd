@@ -4,16 +4,27 @@
 \alias{plotUncertaintyPerClust}
 \title{Uncertainty barplots per cluster}
 \usage{
-plotUncertaintyPerClust(uncertainty.per.clust, clusters,
-  annotation = NULL, ann.per.clust = NULL, thresholds = c(coverage =
-  0.5, negative = 0.5, positive = 0.75), build.panel = T, n.col = 1,
-  n.row = NULL, adjust.legend = T, rel.legend.width = 0.25, ...)
+plotUncertaintyPerClust(
+  uncertainty.per.clust,
+  clusters,
+  annotation = NULL,
+  ann.per.clust = NULL,
+  thresholds = c(coverage = 0.5, negative = 0.5, positive = 0.75),
+  build.panel = T,
+  n.col = 1,
+  n.row = NULL,
+  adjust.legend = T,
+  rel.legend.width = 0.25,
+  title.size = 12,
+  ...
+)
 }
 \arguments{
-\item{...}{Arguments passed on to \code{plotOneUncertaintyPerClust}
-\describe{
-  \item{text.angle}{angle of x-axis labels}
-}}
+\item{...}{
+  Arguments passed on to \code{\link[=plotOneUncertaintyPerClust]{plotOneUncertaintyPerClust}}
+  \describe{
+    \item{\code{text.angle}}{angle of x-axis labels}
+  }}
 }
 \description{
 Uncertainty barplots per cluster

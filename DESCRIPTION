@@ -27,7 +27,7 @@ Remotes:
     hms-dbmi/conos,
     cole-trapnell-lab/garnett,
     YuLab-SMU/ggtree
-RoxygenNote: 6.1.1
+RoxygenNote: 7.0.2
 VignetteBuilder: knitr
 LinkingTo: 
     Rcpp
