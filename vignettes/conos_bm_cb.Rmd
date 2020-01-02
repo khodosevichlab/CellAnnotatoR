@@ -111,7 +111,8 @@ plot_grid(
 In the current example, clustering resolution is too low to separate all subpopulatons, which lead to lack of CLP and DC populations. Let's increase resolution:
 
 ```{r, fig.width=6, fig.height=4.5}
-target_clusters <- clusters[names(annotation)[annotation %in% c("Progenitors", "Plasma")]] %>% 
+ann <- ann_by_level$annotation$l1
+target_clusters <- clusters[names(ann)[ann %in% c("Progenitors", "Plasma")]] %>% 
   as.character() %>% unique()
 clusters_inc <- findSubcommunities(con, target_clusters, groups=clusters, resolution=1)
 con$plotGraph(groups=clusters_inc, size=0.2, shuffle.colors=T)
