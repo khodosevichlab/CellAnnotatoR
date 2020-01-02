@@ -1,6 +1,9 @@
 ## Upcoming
 
-- `max.depth` for annotation
+### Added
+
+- `max.depth` parameter for annotation
+- `title.size` parameter for plotting functions
 
 ## [0.1.1] - 2019-11-29
 
