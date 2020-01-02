@@ -23,6 +23,7 @@ library(pagoda2)
 library(dplyr)
 library(ggplot2)
 library(pbapply)
+library(cowplot)
 
 theme_set(theme_bw())
 ```
@@ -32,7 +33,7 @@ theme_set(theme_bw())
 Let's load and pre-process data:
 
 ```{r, message=FALSE, warning=FALSE}
-panel <- readRDS(file.path(find.package('conos'),'extdata','panel.rds'))
+panel <- readRDS(system.file("extdata", "panel.rds", package="conos"))
 panel_preprocessed <- lapply(panel, basicP2proc, n.cores=4, min.cells.per.gene=0, 
                              n.odgenes=2e3, get.largevis=FALSE, make.geneknn=FALSE)
 ```
@@ -42,16 +43,16 @@ Now we can integrate it with Conos:
 ```{r}
 con <- Conos$new(panel_preprocessed, n.cores=4)
 con$buildGraph()
-con$findCommunities(method=conos::leiden.community, resolution=5)
+con$findCommunities(method=conos::leiden.community, resolution=3)
 con$embedGraph(method="UMAP", min.dist=1, spread=2, n.cores=30)
 
-con$plotGraph(size=0.2)
+con$plotGraph(size=0.2, shuffle.colors=T)
 ```
 
 Prepare data for annotation:
 
 ```{r}
-marker_path <- "../markers/bm_cb.md"
+marker_path <- system.file("extdata", "bm_cb.md", package = "CellAnnotatoR")
 markers <- parseMarkerFile(marker_path) # We don't want to re-read marker inside each step of lapply
 clf_datas <- lapply(con$samples, function(p2) 
   getClassificationData(Matrix::t(p2$misc$rawCounts), markers))
@@ -63,47 +64,68 @@ score_infos <- lapply(clf_datas, getMarkerScoreInfo)
 
 Now we can run individual annotation on each dataset:
 
-```{r}
+```{r, fig.width=12, fig.height=4.5}
 ann_by_dataset <- pbmapply(function(cd, ms, p2) 
   assignCellsByScores(p2$graphs$PCA, score.info=ms, clf.data=cd),
   clf_datas, score_infos, panel_preprocessed, SIMPLIFY=F) %>% 
   setNames(names(clf_datas))
 
 all_annotations <- lapply(ann_by_dataset, function(an) an$annotation$l1) %>% Reduce(c, .)
-con$plotGraph(groups=all_annotations, size=0.2, plot.na=F)
+all_annotations_filt <- lapply(ann_by_dataset, function(an) an$annotation.filt$l1) %>% Reduce(c, .)
+
+plot_grid(
+  con$plotGraph(groups=all_annotations, size=0.2),
+  con$plotGraph(groups=all_annotations_filt, size=0.2), 
+  labels=c("All", "Filtered")
+)
 ```
 
 We can see that running annotation on individual samples doesn't neccesserily guarantee smoothness of labeling on the joint graph, 
 as such approach can't utilize joint structure. To deal with it we can run annotation on the whole graph:
 
-```{r}
+```{r, fig.width=12, fig.height=4.5}
 all_score_info <- mergeScoreInfos(score_infos, verbose=T)
 ann_by_level <- assignCellsByScores(con$graph, score.info=all_score_info, clf.data=clf_datas[[1]])
-con$plotGraph(groups=ann_by_level$annotation$l1, size=0.2, plot.na=F)
+
+plot_grid(
+  con$plotGraph(groups=ann_by_level$annotation$l1, size=0.2),
+  con$plotGraph(groups=ann_by_level$annotation.filt$l1, size=0.2), 
+  labels=c("All", "Filtered")
+)
 ```
 
 To further deal with noise, we can use clustering information:
 
-```{r}
+```{r, fig.width=12, fig.height=4.5}
 clusters <- con$clusters$leiden$groups
-annotation <- assignCellsByScores(con$graph, score.info=all_score_info, clf.data=clf_datas[[1]], 
-                                  clusters=clusters)$annotation$l1
-con$plotGraph(groups=annotation, size=0.2)
+ann_by_level <- assignCellsByScores(con$graph, score.info=all_score_info, clf.data=clf_datas[[1]], 
+                                clusters=clusters)
+
+plot_grid(
+  con$plotGraph(groups=ann_by_level$annotation$l1, size=0.2),
+  con$plotGraph(groups=ann_by_level$annotation.filt$l1, size=0.2), 
+  labels=c("All", "Filtered")
+)
 ```
 
 In the current example, clustering resolution is too low to separate all subpopulatons, which lead to lack of CLP and DC populations. Let's increase resolution:
 
-```{r}
+```{r, fig.width=6, fig.height=4.5}
 target_clusters <- clusters[names(annotation)[annotation %in% c("Progenitors", "Plasma")]] %>% 
   as.character() %>% unique()
-clusters_inc <- findSubcommunities(con, target_clusters, groups=clusters, resolution=2)
+clusters_inc <- findSubcommunities(con, target_clusters, groups=clusters, resolution=1)
 con$plotGraph(groups=clusters_inc, size=0.2, shuffle.colors=T)
 ```
 
 And now we can re-run annotation:
 
-```{r}
-annotation <- assignCellsByScores(con$graph, score.info=all_score_info, clf.data=clf_datas[[1]], 
-                                  clusters=clusters_inc)$annotation$l1
-con$plotGraph(groups=annotation, size=0.2)
+```{r, fig.width=12, fig.height=4.5}
+ann_by_level <- assignCellsByScores(con$graph, score.info=all_score_info, clf.data=clf_datas[[1]], 
+                                clusters=clusters_inc)
+
+plot_grid(
+  con$plotGraph(groups=ann_by_level$annotation$l1, size=0.2),
+  con$plotGraph(groups=ann_by_level$annotation.filt$l1, size=0.2), 
+  labels=c("All", "Filtered")
+)
 ```
