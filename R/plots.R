@@ -3,10 +3,15 @@
 #' @param build.panel combine individual plots to a single panel
 #' @param n.col number of columns in the panel
 #' @param n.row number of rows in the panel
+#' @param title.size font size for title of individual plots. Used only if build.panel==T
 #' @return panel of plots if `build.panel==T` or `plot.list` otherwise
-arrangePlots <- function(plot.list, build.panel, n.col=NULL, n.row=NULL) {
-  if (build.panel)
+arrangePlots <- function(plot.list, build.panel, n.col=NULL, n.row=NULL, title.size=10) {
+  if (build.panel) {
+    p.theme <- ggplot2::theme(plot.title=ggplot2::element_text(size=10, vjust=-1),
+                              plot.margin=ggplot2::margin())
+    plot.list %<>% lapply(`+`, p.theme)
     return(cowplot::plot_grid(plotlist=plot.list, ncol=n.col, nrow=n.row))
+  }
 
   return(plot.list)
 }
@@ -25,12 +30,12 @@ arrangePlots <- function(plot.list, build.panel, n.col=NULL, n.row=NULL) {
 #'   ann_by_level <- assignCellsByScores(graph, clf_data)
 #'   plotAssignmentScores(t_sne, ann_by_level$scores$l1, clf_data$classification.tree)
 #' @export
-plotAssignmentScores <- function(embedding, scores, classification.tree, parent.node="root", build.panel=T, n.col=NULL, n.row=NULL, ...) {
+plotAssignmentScores <- function(embedding, scores, classification.tree, parent.node="root", build.panel=T, n.col=NULL, n.row=NULL, title.size=12, ...) {
   classificationTreeToDf(classification.tree) %>%
     dplyr::filter(Parent == parent.node) %>% .$Node %>%
     lapply(function(n) conos::embeddingPlot(embedding, colors=setNames(scores[, n], rownames(scores)),
                                              title=n, color.range=c(0, 1), ...)) %>%
-    arrangePlots(build.panel=build.panel, n.row=n.row, n.col=n.col)
+    arrangePlots(build.panel=build.panel, n.row=n.row, n.col=n.col, title.size=title.size)
 }
 
 #' Plot Type Markers
@@ -42,7 +47,7 @@ plotAssignmentScores <- function(embedding, scores, classification.tree, parent.
 #' @inheritParams arrangePlots
 #' @inheritDotParams conos::embeddingPlot
 #' @export
-plotTypeMarkers <- function(embedding, count.matrix, cell.type, marker.list, show.legend=T, build.panel=T, n.col=NULL, n.row=NULL, ...) {
+plotTypeMarkers <- function(embedding, count.matrix, cell.type, marker.list, show.legend=T, build.panel=T, n.col=NULL, n.row=NULL, title.size=10, ...) {
   plot.func <- function(gene, title) {
     conos::embeddingPlot(embedding, colors=count.matrix[,gene], show.legend=show.legend, title=title, ...)
   }
@@ -51,7 +56,7 @@ plotTypeMarkers <- function(embedding, count.matrix, cell.type, marker.list, sho
     lapply(function(g) plot.func(g, paste0(g, "+"))) %>%
     c(marker.list[[cell.type]]$not_expressed %>% intersect(colnames(count.matrix)) %>%
         lapply(function(g) plot.func(g, paste0(g, "-")))) %>%
-    arrangePlots(build.panel=build.panel, n.row=n.row, n.col=n.col)
+    arrangePlots(build.panel=build.panel, n.row=n.row, n.col=n.col, title.size=title.size)
 
   return(res)
 }
@@ -110,7 +115,8 @@ extractMarkersFromSubtypes <- function(parent.type="root", clf.data=NULL, clf.tr
 #' @inheritDotParams conos::embeddingPlot
 #' @export
 plotSubtypeMarkers <- function(embedding, count.matrix, parent.type="root", clf.data=NULL, clf.tree=NULL, marker.list=NULL,
-                               show.legend=F, max.depth=NULL, build.panel=T, n.col=NULL, n.row=NULL, marker.type=c("expressed", "not_expressed"), ...) {
+                               show.legend=F, max.depth=NULL, build.panel=T, n.col=NULL, n.row=NULL, marker.type=c("expressed", "not_expressed"),
+                               title.size=10, ...) {
   markers <- extractMarkersFromSubtypes(parent.type=parent.type, clf.data=clf.data, clf.tree=clf.tree, marker.list=marker.list,
                                         count.matrix=count.matrix, max.depth=max.depth, drop.missing=T, marker.type=marker.type)
 
@@ -121,11 +127,11 @@ plotSubtypeMarkers <- function(embedding, count.matrix, parent.type="root", clf.
   },names(markers), titles, SIMPLIFY=F
   )
 
-  return(arrangePlots(plots, build.panel=build.panel, n.row=n.row, n.col=n.col))
+  return(arrangePlots(plots, build.panel=build.panel, n.row=n.row, n.col=n.col, title.size=title.size))
 }
 
 #' @export
-plotAnnotationByLevels <- function(embedding, annotation.by.level, clusters=NULL, build.panel=T, n.col=NULL, n.row=NULL, ...) {
+plotAnnotationByLevels <- function(embedding, annotation.by.level, clusters=NULL, build.panel=T, n.col=NULL, n.row=NULL, title.size=12, ...) {
   res <- lapply(1:length(annotation.by.level),
                 function(i) conos::embeddingPlot(embedding, groups=annotation.by.level[[i]], title=paste("Level", i), ...))
 
@@ -133,7 +139,7 @@ plotAnnotationByLevels <- function(embedding, annotation.by.level, clusters=NULL
     res[[length(res) + 1]] <- conos::embeddingPlot(embedding, groups=clusters, title="Clustering", ...)
   }
 
-  return(arrangePlots(res, build.panel=build.panel, n.row=n.row, n.col=n.col))
+  return(arrangePlots(res, build.panel=build.panel, n.row=n.row, n.col=n.col, title.size=title.size))
 }
 
 plotConfidenceByLevels <- function(embedding, annotation.by.level, scores, show.legend=T, ...) {
@@ -176,12 +182,13 @@ plotTypeHierarchy <- function(classification.tree, layout="slanted", xlims=NULL,
 #' @inheritDotParams conos::embeddingPlot
 #' @export
 plotUncertaintyPerCell <- function(embedding, uncertainty.info, palette=colorRampPalette(c("gray", "#ffeda0", "#fec44f", "#f03b20")), alpha=0.3,
-                                   build.panel=T, n.col=length(uncertainty.info), n.row=NULL, ...) {
+                                   build.panel=T, n.col=length(uncertainty.info), n.row=NULL, title.size=12, ...) {
   names(uncertainty.info) %>% setNames(., .) %>% lapply(function(n)
     conos::embeddingPlot(embedding, colors=uncertainty.info[[n]], alpha=alpha, title=n, palette=palette, ...)) %>%
-    arrangePlots(build.panel=build.panel, n.col=n.col, n.row=n.row)
+    arrangePlots(build.panel=build.panel, n.col=n.col, n.row=n.row, title.size=title.size)
 }
 
+#' Plot One Uncertainty per Cluster
 #' @param text.angle angle of x-axis labels
 #' @inheritDotParams conos:::styleEmbeddingPlot
 plotOneUncertaintyPerClust <- function(uncertainty.per.clust, clusters, annotation=NULL, ann.per.clust=NULL, threshold=0.5, text.angle=45, ...) {
@@ -211,20 +218,21 @@ plotOneUncertaintyPerClust <- function(uncertainty.per.clust, clusters, annotati
 #' @inheritDotParams plotOneUncertaintyPerClust text.angle
 #' @export
 plotUncertaintyPerClust <- function(uncertainty.per.clust, clusters, annotation=NULL, ann.per.clust=NULL,
-                                    thresholds=c(coverage=0.5, negative=0.5, positive=0.75), build.panel=T, n.col=1, n.row=NULL, adjust.legend=T, rel.legend.width=0.25, ...) {
+                                    thresholds=c(coverage=0.5, negative=0.5, positive=0.75), build.panel=T,
+                                    n.col=1, n.row=NULL, adjust.legend=T, rel.legend.width=0.25, title.size=12, ...) {
   ggs <- names(uncertainty.per.clust) %>% setNames(., .) %>% lapply(function(n)
     plotOneUncertaintyPerClust(uncertainty.per.clust[[n]], annotation=annotation, clusters=clusters,
                                ann.per.clust=ann.per.clust, threshold=thresholds[[n]], title=n, ...))
 
   if (!build.panel || !adjust.legend || is.null(annotation))
-    return(arrangePlots(ggs, build.panel=build.panel, n.col=n.col, n.row=n.row))
+    return(arrangePlots(ggs, build.panel=build.panel, n.col=n.col, n.row=n.row, title.size=title.size))
 
   if (!requireNamespace("ggpubr", quietly=T))
     stop("You need to install package 'ggpubr' to be able to adjust legend")
 
   ggl <- ggpubr::get_legend(ggs[[1]])
   ggs %<>% lapply(`+`, ggplot2::theme(legend.position="none", plot.margin=ggplot2::margin()))
-  ggr <- arrangePlots(ggs, build.panel=build.panel, n.col=n.col, n.row=n.row) %>%
+  ggr <- arrangePlots(ggs, build.panel=build.panel, n.col=n.col, n.row=n.row, title.size=title.size) %>%
     cowplot::plot_grid(ggl, rel_widths=c(1 - rel.legend.width, rel.legend.width))
 
   return(ggr)
@@ -290,12 +298,12 @@ plotExpressionViolinMap <- function(markers, count.matrix, annotation, text.angl
 #' @inheritParams arrangePlots
 #' @inheritDotParams conos::embeddingPlot
 #' @export
-plotGeneExpression <- function(genes, embedding, cm, build.panel=T, n.col=NULL, n.row=NULL, ...) {
+plotGeneExpression <- function(genes, embedding, cm, build.panel=T, n.col=NULL, n.row=NULL, title.size=12, ...) {
   res <- genes %>% setNames(., .) %>%
     lapply(function(g) conos::embeddingPlot(embedding, colors=cm[, g], title=g, ...))
 
   if (length(res) == 1)
     return(res[[1]])
 
-  return(arrangePlots(res, build.panel=build.panel, n.col=n.col, n.row=n.row))
+  return(arrangePlots(res, build.panel=build.panel, n.col=n.col, n.row=n.row, title.size=title.size))
 }

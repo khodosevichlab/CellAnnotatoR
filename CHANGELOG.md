@@ -1,3 +1,7 @@
+## Upcoming
+
+- `max.depth` for annotation
+
 ## [0.1.1] - 2019-11-29
 
 ### Fixed

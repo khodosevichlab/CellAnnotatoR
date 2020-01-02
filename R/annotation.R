@@ -24,6 +24,7 @@ annotationFromScores <- function(scores, clusters=NULL) {
   return(colnames(scores)[apply(scores, 1, which.max)] %>% setNames(rownames(scores)))
 }
 
+#' Diffuse Score per Type
 #' @inheritDotParams diffuseGraph fading fading.const verbose tol score.fixing.threshold
 diffuseScorePerType <- function(scores.per.type, graph, parents, cbs.per.type, verbose, n.cores=1, ...) {
   plapply(parents, function(p)
@@ -76,6 +77,7 @@ diffuseGraph <- function(graph, scores, fading=10, fading.const=0.5, score.fixin
 #' @param score.info cell type scores from `getMarkerScoreInfo` function. Re-estimated if NULL
 #' @param clusters vector with cluster labels named by cell ids. Used to expand annotation on these clusters.
 #' @param verbose verbosity level (from 0 to 2)
+#' @param max.depth maximal depth for which annotation is done. Useful during manual marker selection
 #' @inheritParams getMarkerScoreInfo
 #' @inheritDotParams diffuseScorePerType
 #' @return list with parameters:\itemize{
@@ -89,7 +91,7 @@ diffuseGraph <- function(graph, scores, fading=10, fading.const=0.5, score.fixin
 #'   ann_by_level <- assignCellsByScores(graph, clf_data, clusters=clusters)
 #'
 #' @export
-assignCellsByScores <- function(graph, clf.data, score.info=NULL, clusters=NULL, verbose=0, uncertainty.thresholds=c(coverage=0.5, negative=0.5, positive=0.75), ...) {
+assignCellsByScores <- function(graph, clf.data, score.info=NULL, clusters=NULL, verbose=0, uncertainty.thresholds=c(coverage=0.5, negative=0.5, positive=0.75), max.depth=NULL, ...) {
   if (!is.null(clusters)) {
     clusters <- as.factor(clusters)
   }
@@ -111,6 +113,7 @@ assignCellsByScores <- function(graph, clf.data, score.info=NULL, clusters=NULL,
   subtypes.per.depth.level <- classificationTreeToDf(clf.data$classification.tree) %$%
     split(., PathLen) %>% lapply(function(df) split(df$Node, df$Parent)) %>% .[order(names(.))]
 
+  max.depth <- if (is.null(max.depth)) length(subtypes.per.depth.level) else min(max.depth, length(subtypes.per.depth.level))
   c.ann <- rep("root", nrow(scores)) %>% setNames(rownames(scores))
   c.ann.filt <- c.ann
   ann.by.level <- list()
@@ -119,7 +122,7 @@ assignCellsByScores <- function(graph, clf.data, score.info=NULL, clusters=NULL,
   scores.posterior <- scores
 
   possible.ann.levels <- c()
-  for (pl in 1:length(subtypes.per.depth.level)) {
+  for (pl in 1:max.depth) {
     if (verbose > 0) message("Level ", pl, "...")
 
     c.subtypes.per.parent <- subtypes.per.depth.level[[pl]]
