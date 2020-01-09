@@ -407,7 +407,7 @@ prepareDeDf <- function(df, cell.type, annotation, cm.raw, low.expression.thresh
     df %<>% tibble::as_tibble(rownames="Gene")
   }
 
-  return(conos:::appendSpecificityMetricsToDE(df, annotation, cell.type, cm.raw, low.expression.threshold=low.expression.threshold))
+  return(sccore::appendSpecificityMetricsToDE(df, annotation, cell.type, cm.raw, low.expression.threshold=low.expression.threshold))
 }
 
 #' @export
