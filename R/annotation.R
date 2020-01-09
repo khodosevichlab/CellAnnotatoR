@@ -101,6 +101,14 @@ assignCellsByScores <- function(graph, clf.data, score.info=NULL, clusters=NULL,
   }
 
   scores <- getMarkerScoresPerCellType(clf.data, score.info=score.info)
+  if (length(setdiff(igraph::V(graph)$name, rownames(scores))) > 0)
+    stop("Not all cells from the graph are presented in clf.data")
+
+  if (length(setdiff(rownames(scores), igraph::V(graph)$name)) > 0) {
+    warning("Not all cells from the clf.data are presented in the graph. Omitting ",
+            nrow(scores) - length(igraph::V(graph)$name), " cells")
+    scores %<>% .[igraph::V(graph)$name,]
+  }
 
   if (!is.null(graph)) {
     if ((is(graph, "Matrix") || is(graph, "matrix")) && ncol(graph) == nrow(graph)) {
