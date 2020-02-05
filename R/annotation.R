@@ -173,16 +173,20 @@ assignCellsByScores <- function(graph, clf.data, score.info=NULL, clusters=NULL,
 #' @export
 normalizeTfIdfWithFeatures <- function(cm, max.quantile=0.95, max.smooth=1e-10) {
   cm %<>% as("dgCMatrix")
+  
+  # Total count normalization (i.e. TF-step)
   cm@x <- cm@x / rep(Matrix::colSums(cm), diff(cm@p))
   cm <- Matrix::t(cm)
 
+  # Factors for min-max gene normalization
   max.vals <- split(cm@x, rep(1:(length(cm@p)-1), diff(cm@p)))[paste0(1:ncol(cm))]
   max.vals[is.null(max.vals)] <- c()
-  max.vals %<>% sapply(quantile, max.quantile) %>% `+`(max.smooth)
+  max.vals %<>% sapply(quantile, max.quantile) %>% `+`(max.smooth) # Robust alternative to maximum
 
-  cm@x <- cm@x / rep(max.vals, diff(cm@p))
+  cm@x <- cm@x / rep(max.vals, diff(cm@p)) # fast way to do column (row?)-wise normalization for sparse matrices
 
   tf.idf <- cm
+  # IDF-factors: log(1 + fraction of expressing cells)
   idf.weights <- log(1 + nrow(tf.idf) / (Matrix::colSums(tf.idf > 0) + 1))
   tf.idf@x <- tf.idf@x * rep(idf.weights, diff(tf.idf@p))
   return(tf.idf)
