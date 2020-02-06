@@ -1,3 +1,6 @@
+#' Aggregate Score Change per Gene
+#' @description Aggregates score chage over all type. Either average (`balance.cell.types=T`)
+#' or sum (`balance.cell.types=F`) it per cell type and returns sum of signed scores
 aggregateScoreChangePerGene <- function(d.scores, annotation, marker.type, cell.type, target.type=NULL, balance.cell.types=T, self.mult=1) {
   aggr.func <- if (balance.cell.types) Matrix::colMeans else Matrix::colSums
 
@@ -190,11 +193,21 @@ preSelectMarkerCandidates <- function(de.info, ...) {
   return(markers.per.type)
 }
 
-getTopNegativeGenes <- function(pos.gene, cell.type, cm.norm, annotation, markers.per.type, s.info, pos.score.changes, n.neg.genes, score.change.threshold) {
+#' Get Top Negative Genes
+#' @param pos.gene positive marker for which new negative markers must be found
+#' @param cell.type all markers are relative to this cell type
+#' @param cm.norm tf-idf normalized count matrix
+#' @param annotation cell type annotation
+#' @param cur.neg.genes negative markers candidates
+#' @param s.info score info
+#' @param pos.score.changes score changes per cell from the positive marker candidates. Only `pos.score.changes[,pos.gene]` is used
+#' @param n.neg.genes number of new negative markers to select
+#' @param score.change.threshold ???
+getTopNegativeGenes <- function(pos.gene, cell.type, cm.norm, annotation, cur.neg.genes, s.info, pos.score.changes, n.neg.genes, score.change.threshold) {
   c.max.scores <- pmax(s.info$max.pos.scores[,cell.type], cm.norm[, pos.gene])
-  cm.norm.neg <- cm.norm[, markers.per.type$negative[[cell.type]], drop=F]
+  cm.norm.neg <- cm.norm[, cur.neg.genes, drop=F]
   neg.scores <- estimateNewNegativeScores(cm.norm.neg, c.max.scores, s.info$neg.scores[,cell.type]) %>%
-    `dimnames<-`(dimnames(cm.norm.neg))
+    `dimnames<-`(dimnames(cm.norm.neg)) # negative score (1-mult) per cell per marker candidate
 
   if (ncol(neg.scores) == 0)
     return(NULL)
@@ -202,6 +215,9 @@ getTopNegativeGenes <- function(pos.gene, cell.type, cm.norm, annotation, marker
   neg.score.info <- ((1 - neg.scores) * pos.score.changes[,pos.gene]) %>%
     aggregateScoreChangePerGene(annotation, "both", cell.type)
   neg.score.base <- neg.score.info %>% .[which.max(.$Score),]
+  if (neg.score.base$Score < 1e-20)
+    return(NULL)
+
   top.neg.ids <- neg.score.info %$% Gene[order(Score, decreasing=T)[1:min(n.neg.genes, nrow(.))]] %>%
     match(colnames(neg.scores))
 
@@ -228,7 +244,7 @@ getNextMarkers <- function(cell.type, cm.norm, annotation, marker.list, markers.
   top.pos.genes <- pos.score.changes.aggr %$% Gene[order(Score, decreasing=T)] %>% .[1:min(n.pos.genes, length(.))]
 
   pos.score <- pos.score.changes.aggr %>% .[which.max(.$Score),]
-  res.score <- plapply(top.pos.genes, getTopNegativeGenes, cell.type, cm.norm, annotation, markers.per.type, s.info,
+  res.score <- plapply(top.pos.genes, getTopNegativeGenes, cell.type, cm.norm, annotation, markers.per.type$negative[[cell.type]], s.info,
                        pos.score.changes, n.neg.genes=n.neg.genes, score.change.threshold=score.change.threshold,
                        verbose=verbose, n.cores=max(min(n.cores, n.pos.genes), 1)) %>%
     .[!sapply(., is.null)]
@@ -245,7 +261,7 @@ getNextMarkers <- function(cell.type, cm.norm, annotation, marker.list, markers.
     message("Neg. score: ", round(res.score$Score, 3), ", Pos. score: ", round(pos.score$Score, 3))
   }
 
-  if ((res.score$Score - pos.score$Score) / abs(pos.score$Score) < score.change.threshold) {
+  if ((res.score$Score < 1e-10) || ((res.score$Score - pos.score$Score) / abs(pos.score$Score) < score.change.threshold)) {
     res.score <- pos.score %>% dplyr::rename(PGene=Gene) %>% dplyr::mutate(NGene1=NA, NGene2=NA)
   }
 
