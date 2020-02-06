@@ -1,3 +1,7 @@
+convertGeneIds <- function (genes, db, source.type, target.type) {
+  suppressMessages(AnnotationDbi::mapIds(db, keys=genes, column=target.type, source.type))
+}
+
 unifyGeneIds <- function(cm, data.gene.id.type, marker.gene.id.type, db=NULL, verbose=F) {
   if (marker.gene.id.type == data.gene.id.type)
     return(list(cm=cm, gene.table=data.frame(data=rownames(cm), marker=rownames(cm), stringsAsFactors=F)))
@@ -5,8 +9,8 @@ unifyGeneIds <- function(cm, data.gene.id.type, marker.gene.id.type, db=NULL, ve
   if (is.null(db))
     stop("db must be provided for marker conversion")
 
-  new.ids <- garnett:::convert_gene_ids(rownames(cm), db, data.gene.id.type, marker.gene.id.type)
-  new.ids %<>% .[!is.na(.)] %>% .[!duplicated(.)]
+  new.ids <- convertGeneIds(rownames(cm), db, data.gene.id.type, marker.gene.id.type) %>%
+    .[!is.na(.)] %>% .[!duplicated(.)]
 
   n.lost <- nrow(cm) - length(new.ids)
   frac.lost <- n.lost / nrow(cm)
@@ -23,6 +27,51 @@ unifyGeneIds <- function(cm, data.gene.id.type, marker.gene.id.type, db=NULL, ve
   return(list(cm=cm, gene.table=gene.table))
 }
 
+wrongBlockError <- function(block, line, msg) {
+  stop("Can't parse block for type '", block[[1]], "', line: '", line, "'. ", msg)
+}
+
+parseBlock <- function(block) {
+  cell.type <- gsub(">", "", block[[1]]) %>% trimws()
+  marker.info <- list(positive=c(), negative=c())
+  for (l in block[2:length(block)]) {
+    l.parts <- strsplit(l, ":", fixed=T)[[1]] %>% trimws()
+    if (length(l.parts) != 2) {
+      if ((nchar(l.parts[[1]]) == nchar(l)) || (length(l.parts) > 2))
+        wrongBlockError(block, l, "Exactly one ':' must be present.")
+
+      wrongBlockError(block, l, "Empty entry after the ':' separator.")
+    }
+
+    if (l.parts[[1]] == "expressed") {
+      genes <- strsplit(l.parts[[2]], ",", fixed=T)[[1]] %>% trimws()
+      if (length(genes) == 0)
+        wrongBlockError(block, l, "No genes found.")
+
+      marker.info$positive %<>% c(genes)
+    } else if (l.parts[[1]] == "not expressed") {
+      genes <- strsplit(l.parts[[2]], ",", fixed=T)[[1]] %>% trimws()
+      if (length(genes) == 0)
+        wrongBlockError(block, l, "No genes found.")
+
+      marker.info$negative %<>% c(genes)
+    } else if (l.parts[[1]] == "subtype of") {
+      if (!is.null(marker.info$parent))
+        wrongBlockError(block, l, "Only one 'subtype of' line can be presented.")
+
+      marker.info$parent <- l.parts[[2]]
+    } else {
+      next
+    }
+  }
+
+  if (is.null(marker.info$parent)) {
+    marker.info$parent <- "root"
+  }
+
+  return(list(marker.info) %>% setNames(cell.type))
+}
+
 #' Parse Marker File
 #' @description read markers from the markup file
 #' @param path path to the markup file
@@ -33,9 +82,18 @@ unifyGeneIds <- function(cm, data.gene.id.type, marker.gene.id.type, db=NULL, ve
 #' }
 #' @export
 parseMarkerFile <- function(path) {
-  marker.list <- path %>% readChar(file.info(.)$size) %>% paste0("\n") %>% garnett:::parse_input() %>% as.list()
-  marker.list$name_order <- NULL
-  return(lapply(marker.list, function(x) list(expressed=x@expressed, not_expressed=x@not_expressed, parent=x@parenttype)))
+  markup.lines <- readr::read_lines(path) %>% .[nchar(.) > 0] %>%
+    strsplit("#", fixed=T) %>% sapply(`[[`, 1) %>%
+    trimws() %>% .[nchar(.) > 0]
+
+  start.ids <- which(substr(markup.lines, 1, 1) == ">")
+  if (length(start.ids) < 2)
+    stop("At least two type entries must be presented in the markup file")
+
+  blocks <- mapply(function(s, e) markup.lines[s:(e-1)],
+                   start.ids[1:(length(start.ids)-1)], start.ids[2:length(start.ids)])
+
+  return(Reduce(c, lapply(blocks, parseBlock)))
 }
 
 #' Create Classification Tree

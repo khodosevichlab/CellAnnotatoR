@@ -9,7 +9,6 @@ Encoding: UTF-8
 LazyData: true
 Imports:
     conos (>= 1.2.0),
-    garnett (>= 0.1.13),
     dplyr,
     ggplot2,
     igraph,
@@ -25,7 +24,6 @@ Suggests:
     ggpubr
 Remotes: 
     hms-dbmi/conos,
-    cole-trapnell-lab/garnett,
     YuLab-SMU/ggtree
 RoxygenNote: 7.0.2
 VignetteBuilder: knitr

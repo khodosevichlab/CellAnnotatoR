@@ -1,3 +1,10 @@
+## [Upcoming]
+
+### Fixed
+
+- Fixed multiple bugs
+- Removed Garnett dependency
+
 ## [0.1.2] - 2020-01-02
 
 ### Added

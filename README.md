@@ -3,18 +3,9 @@ Automated marker-based annotation of cell types
 
 ## Installation
 
-This package uses [Garnett](https://cole-trapnell-lab.github.io/garnett/docs/) format of marker gene markup files and 
-[Conos](https://github.com/hms-dbmi/conos) label propagaton, so you need to install these packages as dependencies:
+This package uses [Conos](https://github.com/hms-dbmi/conos) label propagaton, so you need to install it as a dependency:
 
 ```r
-if (!requireNamespace("BiocManager"))
-    install.packages("BiocManager")
-
-if (!requireNamespace("devtools"))
-  install.packages("devtools")
-
-BiocManager::install(c("monocle"))
-devtools::install_github("cole-trapnell-lab/garnett")
 devtools::install_github("hms-dbmi/conos")
 ```
 
