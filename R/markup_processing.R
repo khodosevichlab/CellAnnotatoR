@@ -82,7 +82,7 @@ parseBlock <- function(block) {
 #' }
 #' @export
 parseMarkerFile <- function(path) {
-  markup.lines <- readr::read_lines(path) %>% .[nchar(.) > 0] %>%
+  markup.lines <- readLines(path) %>% .[nchar(.) > 0] %>%
     strsplit("#", fixed=T) %>% sapply(`[[`, 1) %>%
     trimws() %>% .[nchar(.) > 0]
 
