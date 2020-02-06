@@ -101,20 +101,20 @@ assignCellsByScores <- function(graph, clf.data, score.info=NULL, clusters=NULL,
   }
 
   scores <- getMarkerScoresPerCellType(clf.data, score.info=score.info)
-  if (length(setdiff(igraph::V(graph)$name, rownames(scores))) > 0)
-    stop("Not all cells from the graph are presented in clf.data")
-
-  if (length(setdiff(rownames(scores), igraph::V(graph)$name)) > 0) {
-    warning("Not all cells from the clf.data are presented in the graph. Omitting ",
-            nrow(scores) - length(igraph::V(graph)$name), " cells")
-    scores %<>% .[igraph::V(graph)$name,]
-  }
-
   if (!is.null(graph)) {
     if ((is(graph, "Matrix") || is(graph, "matrix")) && ncol(graph) == nrow(graph)) {
       graph <- igraph::graph_from_adjacency_matrix(graph, weighted=T)
     } else if (!is(graph, "igraph")) {
       stop("Unknown graph format. Only adjacency matrix or igraph are supported")
+    }
+
+    if (length(setdiff(igraph::V(graph)$name, rownames(scores))) > 0)
+      stop("Not all cells from the graph are presented in clf.data")
+
+    if (length(setdiff(rownames(scores), igraph::V(graph)$name)) > 0) {
+      warning("Not all cells from the clf.data are presented in the graph. Omitting ",
+              nrow(scores) - length(igraph::V(graph)$name), " cells")
+      scores %<>% .[igraph::V(graph)$name,]
     }
   }
 
@@ -141,7 +141,7 @@ assignCellsByScores <- function(graph, clf.data, score.info=NULL, clusters=NULL,
       .[sapply(., length) > 0]
     c.parents %<>% .[names(cbs.per.type)]
 
-    scores.per.type <- lapply(c.parents, function(p) scores[cbs.per.type[[p]], c.subtypes.per.parent[[p]]])
+    scores.per.type <- lapply(c.parents, function(p) scores[cbs.per.type[[p]], c.subtypes.per.parent[[p]], drop=F])
 
     if (!is.null(graph)) {
       scores.per.type %<>% diffuseScorePerType(graph, c.parents, cbs.per.type, verbose=(verbose > 1), ...)
