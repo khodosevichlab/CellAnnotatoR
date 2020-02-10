@@ -33,7 +33,7 @@ wrongBlockError <- function(block, line, msg) {
 
 parseBlock <- function(block) {
   cell.type <- gsub(">", "", block[[1]]) %>% trimws()
-  marker.info <- list(positive=c(), negative=c())
+  marker.info <- list(expressed=c(), not_expressed=c())
   for (l in block[2:length(block)]) {
     l.parts <- strsplit(l, ":", fixed=T)[[1]] %>% trimws()
     if (length(l.parts) != 2) {
@@ -48,13 +48,13 @@ parseBlock <- function(block) {
       if (length(genes) == 0)
         wrongBlockError(block, l, "No genes found.")
 
-      marker.info$positive %<>% c(genes)
+      marker.info$expressed %<>% c(genes)
     } else if (l.parts[[1]] == "not expressed") {
       genes <- strsplit(l.parts[[2]], ",", fixed=T)[[1]] %>% trimws()
       if (length(genes) == 0)
         wrongBlockError(block, l, "No genes found.")
 
-      marker.info$negative %<>% c(genes)
+      marker.info$not_expressed %<>% c(genes)
     } else if (l.parts[[1]] == "subtype of") {
       if (!is.null(marker.info$parent))
         wrongBlockError(block, l, "Only one 'subtype of' line can be presented.")
@@ -91,7 +91,7 @@ parseMarkerFile <- function(path) {
     stop("At least two type entries must be presented in the markup file")
 
   blocks <- mapply(function(s, e) markup.lines[s:(e-1)],
-                   start.ids[1:(length(start.ids)-1)], start.ids[2:length(start.ids)])
+                   start.ids, c(start.ids[2:length(start.ids)], length(markup.lines) + 1))
 
   return(Reduce(c, lapply(blocks, parseBlock)))
 }
@@ -108,6 +108,12 @@ parseMarkerFile <- function(path) {
 createClassificationTree <- function(marker.list) {
   parents <- sapply(marker.list, function(pl) if(length(pl$parent) == 0) "root" else pl$parent)
   tree <- c(parents, names(marker.list)) %>% matrix(ncol=2) %>% t() %>% igraph::make_directed_graph()
+
+  n.parents <- igraph::as_adj(tree) %>% Matrix::colSums()
+  hanging.verts <- which((n.parents == 0) & (names(n.parents) != "root"))
+  if (length(hanging.verts) > 0)
+    stop("Cell types ", paste0("'", names(hanging.verts), "'") %>% paste(collapse=", "), " are mentioned as parents, but entries are missing")
+
   return(tree)
 }
 
