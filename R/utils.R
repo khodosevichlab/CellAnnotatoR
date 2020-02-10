@@ -12,6 +12,22 @@ plapply <- function(..., n.cores=1, verbose=F) {
   return(parallel::mclapply(..., mc.cores=n.cores))
 }
 
+sparseColMax <- function(mtx) {
+  max.vals <- rep(0, ncol(mtx))
+  facs <- split(mtx@x, rep(1:(length(mtx@p)-1), diff(mtx@p)))
+  facs <- sapply(facs, max)
+  max.vals[as.integer(names(facs))] <- as.vector(facs)
+  return(max.vals)
+}
+
+sparseRowMax <- function(mtx) {
+  max.vals <- rep(0, nrow(mtx))
+  facs <- split(mtx@x, mtx@i + 1)
+  facs <- sapply(facs, max)
+  max.vals[as.integer(names(facs))] <- as.vector(facs)
+  return(max.vals)
+}
+
 #' Get Annotation Per Parent
 #' @description for each cell type get annotation of its subtypes on the next hierarchy level
 #'

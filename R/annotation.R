@@ -139,6 +139,10 @@ assignCellsByScores <- function(graph, clf.data, score.info=NULL, clusters=NULL,
     c.parents <- names(c.subtypes.per.parent) %>% setNames(., .)
     cbs.per.type <- lapply(c.parents, function(p) names(c.ann)[c.ann == p]) %>%
       .[sapply(., length) > 0]
+
+    if (length(cbs.per.type) == 0) # some subtypes have deeper level of annotation, but non of them is found in the dataset
+      break
+
     c.parents %<>% .[names(cbs.per.type)]
 
     scores.per.type <- lapply(c.parents, function(p) scores[cbs.per.type[[p]], c.subtypes.per.parent[[p]], drop=F])
@@ -265,7 +269,8 @@ getCellTypeScoreInfo <- function(markers, tf.idf, aggr=T) {
     c.submat <- tf.idf[, expressed.genes, drop=F]
     c.submat.t <- Matrix::t(c.submat)
     scores <- if (aggr) Matrix::colSums(c.submat.t) else c.submat
-    max.positive.expr <- apply(c.submat.t, 2, max)
+    # max.positive.expr <- apply(c.submat.t, 2, max)
+    max.positive.expr <- sparseColMax(c.submat.t)
   }
 
   not.expressed.genes <- intersect(markers$not_expressed, colnames(tf.idf))
@@ -273,6 +278,7 @@ getCellTypeScoreInfo <- function(markers, tf.idf, aggr=T) {
     score.mult <- setNames(rep(1, nrow(tf.idf)), rownames(tf.idf))
   } else {
     max.negative.expr <- apply(tf.idf[, not.expressed.genes, drop=F], 1, max)
+    # max.negative.expr <- sparseRowMax(tf.idf[, not.expressed.genes, drop=F])
     score.mult <- pmax(max.positive.expr - max.negative.expr, 0) / max.positive.expr
     score.mult[is.na(score.mult)] <- 0
   }
