@@ -137,6 +137,29 @@ getClassificationData <- function(cm, markers, prenormalized=F, data.gene.id.typ
      stop("Unknown format of markers")
   }
 
+  missed.genes <- c()
+  present.genes <- c()
+
+  # Filter markers not presented in the dataset
+  for (n in names(markers)) {
+    for (n2 in c("expressed", "not_expressed")) {
+      missed.genes %<>% union(setdiff(markers[[n]][[n2]], colnames(cm)))
+      markers[[n]][[n2]] %<>% intersect(colnames(cm))
+      present.genes %<>% union(markers[[n]][[n2]])
+    }
+
+    if (length(markers[[n]]$expressed) == 0) {
+      subtypes <- names(markers)[sapply(markers, function(x) x$parent == n)]
+      warning("Cell type '", n, "' is not presented in the data. Drop it and its ", length(subtypes), " subtypes")
+      markers[[n]] <- NULL
+      markers[subtypes] <- NULL
+    }
+  }
+
+  if (length(missed.genes) != 0) {
+    warning("Dropped ", length(missed.genes), " genes missed from the dataset. ", length(present.genes), " marker genes left.")
+  }
+
   classification.tree <- createClassificationTree(markers)
 
   res <- list(cm=gi$cm, classification.tree=classification.tree, gene.table=gi$gene.table, marker.list=markers)
@@ -183,7 +206,7 @@ markerListToMarkup <- function(marker.list, file="", group.by.parent=T) {
     }
 
     ml.per.parent <- marker.list %>% split(sapply(., `[[`, "parent")) %$%
-      c(list(root=root), .[names(.) != "root"])
+      c(list(root="root"), .[names(.) != "root"])
     markup.text <- names(ml.per.parent) %>% lapply(function(pn)
       paste0("## ", pn, "\n\n", markerListToMarkup(ml.per.parent[[pn]], group.by.parent=F))) %>%
       paste0(collapse="")
