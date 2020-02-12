@@ -16,7 +16,7 @@ sparseColMax <- function(mtx) {
   max.vals <- rep(0, ncol(mtx))
   facs <- split(mtx@x, rep(1:(length(mtx@p)-1), diff(mtx@p)))
   facs <- sapply(facs, max)
-  max.vals[as.integer(names(facs))] <- as.vector(facs)
+  max.vals[as.integer(names(facs))] <- unlist(facs)
   return(max.vals)
 }
 
