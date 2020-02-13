@@ -33,7 +33,7 @@ wrongBlockError <- function(block, line, msg) {
 
 parseBlock <- function(block) {
   cell.type <- gsub(">", "", block[[1]]) %>% trimws()
-  marker.info <- list(expressed=c(), not_expressed=c())
+  marker.info <- list(expressed=c(), not_expressed=c(), expressed_uniq=c())
   for (l in block[2:length(block)]) {
     l.parts <- strsplit(l, ":", fixed=T)[[1]] %>% trimws()
     if (length(l.parts) != 2) {
@@ -48,13 +48,19 @@ parseBlock <- function(block) {
       if (length(genes) == 0)
         wrongBlockError(block, l, "No genes found.")
 
-      marker.info$expressed %<>% c(genes)
+      marker.info$expressed %<>% union(genes)
+    } else if (l.parts[[1]] == "expressed uniq") {
+      genes <- strsplit(l.parts[[2]], ",", fixed=T)[[1]] %>% trimws()
+      if (length(genes) == 0)
+        wrongBlockError(block, l, "No genes found.")
+
+      marker.info$expressed_uniq %<>% union(genes)
     } else if (l.parts[[1]] == "not expressed") {
       genes <- strsplit(l.parts[[2]], ",", fixed=T)[[1]] %>% trimws()
       if (length(genes) == 0)
         wrongBlockError(block, l, "No genes found.")
 
-      marker.info$not_expressed %<>% c(genes)
+      marker.info$not_expressed %<>% union(genes)
     } else if (l.parts[[1]] == "subtype of") {
       if (!is.null(marker.info$parent))
         wrongBlockError(block, l, "Only one 'subtype of' line can be presented.")
@@ -81,8 +87,9 @@ parseBlock <- function(block) {
 #'   \item{parent: parent cell type (`"root"` if there is no parent)}
 #' }
 #' @export
-parseMarkerFile <- function(path) {
-  markup.lines <- readLines(path) %>% .[nchar(.) > 0] %>%
+parseMarkerFile <- function(path, is.text=FALSE) {
+  lines <- if (is.text) unlist(strsplit(path, "\n")) else readLines(path)
+  markup.lines <- lines %>% .[nchar(.) > 0] %>%
     strsplit("#", fixed=T) %>% sapply(`[[`, 1) %>%
     trimws() %>% .[nchar(.) > 0]
 
@@ -91,9 +98,26 @@ parseMarkerFile <- function(path) {
     stop("At least two type entries must be presented in the markup file")
 
   blocks <- mapply(function(s, e) markup.lines[s:(e-1)],
-                   start.ids, c(start.ids[2:length(start.ids)], length(markup.lines) + 1))
+                   start.ids, c(start.ids[2:length(start.ids)], length(markup.lines) + 1),
+                   SIMPLIFY=F)
 
-  return(Reduce(c, lapply(blocks, parseBlock)))
+  marker.list <- Reduce(c, lapply(blocks, parseBlock))
+
+  # Process "expressed uniq" tag
+  for (n in names(marker.list)) {
+    if (length(marker.list[[n]]$expressed_uniq) > 0) {
+      for (n2 in names(marker.list)) {
+        if ((n2 != n) && (marker.list[[n2]]$parent == marker.list[[n]]$parent)) {
+          marker.list[[n2]]$not_expressed %<>% union(marker.list[[n]]$expressed_uniq)
+        }
+      }
+    }
+
+    marker.list[[n]]$expressed %<>% union(marker.list[[n]]$expressed_uniq)
+    marker.list[[n]]$expressed_uniq <- NULL
+  }
+
+  return(marker.list)
 }
 
 #' Create Classification Tree
