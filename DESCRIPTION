@@ -21,7 +21,8 @@ Suggests:
     ggtree (>= 1.99.1),
     knitr,
     rmarkdown,
-    ggpubr
+    ggpubr,
+    testthat
 Remotes: 
     hms-dbmi/conos,
     YuLab-SMU/ggtree
