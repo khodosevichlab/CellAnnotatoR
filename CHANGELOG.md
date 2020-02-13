@@ -3,6 +3,7 @@
 ### Added
 
 - "expressed uniq" field in the markup file for markers with expression, unique for the cell type
+- Added multiple input validations
 
 ### Fixed
 

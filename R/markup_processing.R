@@ -75,6 +75,9 @@ parseBlock <- function(block) {
     marker.info$parent <- "root"
   }
 
+  if ((length(marker.info$expressed) == 0) && (length(marker.info$expressed_uniq) == 0))
+    wrongBlockError(block, l, "No positive markers specified.")
+
   return(list(marker.info) %>% setNames(cell.type))
 }
 

@@ -39,3 +39,35 @@ test_that("parser works", {
   expect_equal(marker.info[[1]]$not_expressed, "MBP")
   expect_true(all(c("MBP", "XXX") %in% marker.info[[3]]$not_expressed))
 })
+
+test_that("expressed field is presented", {
+  markup <- "
+  > Neurons
+  expressed: SYT1
+
+  > N2
+  test: MBP
+  "
+
+  expect_error(parseMarkerFile(markup, is.text=T))
+
+  markup <- "
+  > Neurons
+  expressed: SYT1
+
+  > N2
+  expressed:
+  "
+
+  expect_error(parseMarkerFile(markup, is.text=T))
+
+  markup <- "
+  > Neurons
+  expressed: SYT1
+
+  > N2
+  expressed uniq: SSS
+  "
+
+  parseMarkerFile(markup, is.text=T)
+})
