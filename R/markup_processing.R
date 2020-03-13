@@ -133,6 +133,8 @@ parseMarkerFile <- function(path, is.text=FALSE) {
 #'
 #' @export
 createClassificationTree <- function(marker.list) {
+  if (length(marker.list) == 0)
+    stop("Empty marker list")
   parents <- sapply(marker.list, function(pl) if(length(pl$parent) == 0) "root" else pl$parent)
   tree <- c(parents, names(marker.list)) %>% matrix(ncol=2) %>% t() %>% igraph::make_directed_graph()
 
@@ -170,8 +172,8 @@ getClassificationData <- function(cm, markers, prenormalized=F, data.gene.id.typ
   # Filter markers not presented in the dataset
   for (n in names(markers)) {
     for (n2 in c("expressed", "not_expressed")) {
-      missed.genes %<>% union(setdiff(markers[[n]][[n2]], colnames(cm)))
-      markers[[n]][[n2]] %<>% intersect(colnames(cm))
+      missed.genes %<>% union(setdiff(markers[[n]][[n2]], rownames(cm)))
+      markers[[n]][[n2]] %<>% intersect(rownames(cm))
       present.genes %<>% union(markers[[n]][[n2]])
     }
 
@@ -184,12 +186,12 @@ getClassificationData <- function(cm, markers, prenormalized=F, data.gene.id.typ
   }
 
   if (length(missed.genes) != 0) {
-    warning("Dropped ", length(missed.genes), " genes missed from the dataset. ", length(present.genes), " marker genes left.")
+    warning("Dropped ", length(missed.genes), " genes missed from the dataset. ", length(present.genes), " marker genes left.\n")
   }
 
   classification.tree <- createClassificationTree(markers)
 
-  res <- list(cm=gi$cm, classification.tree=classification.tree, gene.table=gi$gene.table, marker.list=markers)
+  res <- list(cm=Matrix::t(gi$cm), classification.tree=classification.tree, gene.table=gi$gene.table, marker.list=markers)
   return(res)
 }
 
