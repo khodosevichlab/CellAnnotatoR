@@ -1,6 +1,6 @@
 Conos alignment of new datasets
 ================
-22 November, 2019
+24 April, 2020
 
 ``` r
 library(ggplot2)
@@ -160,48 +160,48 @@ de_info_per_parent <- ann_by_parent %>%
 ```
 
     ## Warning in p2$getDifferentialGenes(groups = ann, z.threshold = 0): cluster
-    ## vector doesn't specify groups for all of the cells, dropping missing cells
-    ## from comparison
+    ## vector doesn't specify groups for all of the cells, dropping missing cells from
+    ## comparison
     
     ## Warning in p2$getDifferentialGenes(groups = ann, z.threshold = 0): cluster
-    ## vector doesn't specify groups for all of the cells, dropping missing cells
-    ## from comparison
+    ## vector doesn't specify groups for all of the cells, dropping missing cells from
+    ## comparison
     
     ## Warning in p2$getDifferentialGenes(groups = ann, z.threshold = 0): cluster
-    ## vector doesn't specify groups for all of the cells, dropping missing cells
-    ## from comparison
+    ## vector doesn't specify groups for all of the cells, dropping missing cells from
+    ## comparison
     
     ## Warning in p2$getDifferentialGenes(groups = ann, z.threshold = 0): cluster
-    ## vector doesn't specify groups for all of the cells, dropping missing cells
-    ## from comparison
+    ## vector doesn't specify groups for all of the cells, dropping missing cells from
+    ## comparison
     
     ## Warning in p2$getDifferentialGenes(groups = ann, z.threshold = 0): cluster
-    ## vector doesn't specify groups for all of the cells, dropping missing cells
-    ## from comparison
+    ## vector doesn't specify groups for all of the cells, dropping missing cells from
+    ## comparison
     
     ## Warning in p2$getDifferentialGenes(groups = ann, z.threshold = 0): cluster
-    ## vector doesn't specify groups for all of the cells, dropping missing cells
-    ## from comparison
+    ## vector doesn't specify groups for all of the cells, dropping missing cells from
+    ## comparison
     
     ## Warning in p2$getDifferentialGenes(groups = ann, z.threshold = 0): cluster
-    ## vector doesn't specify groups for all of the cells, dropping missing cells
-    ## from comparison
+    ## vector doesn't specify groups for all of the cells, dropping missing cells from
+    ## comparison
     
     ## Warning in p2$getDifferentialGenes(groups = ann, z.threshold = 0): cluster
-    ## vector doesn't specify groups for all of the cells, dropping missing cells
-    ## from comparison
+    ## vector doesn't specify groups for all of the cells, dropping missing cells from
+    ## comparison
     
     ## Warning in p2$getDifferentialGenes(groups = ann, z.threshold = 0): cluster
-    ## vector doesn't specify groups for all of the cells, dropping missing cells
-    ## from comparison
+    ## vector doesn't specify groups for all of the cells, dropping missing cells from
+    ## comparison
     
     ## Warning in p2$getDifferentialGenes(groups = ann, z.threshold = 0): cluster
-    ## vector doesn't specify groups for all of the cells, dropping missing cells
-    ## from comparison
+    ## vector doesn't specify groups for all of the cells, dropping missing cells from
+    ## comparison
     
     ## Warning in p2$getDifferentialGenes(groups = ann, z.threshold = 0): cluster
-    ## vector doesn't specify groups for all of the cells, dropping missing cells
-    ## from comparison
+    ## vector doesn't specify groups for all of the cells, dropping missing cells from
+    ## comparison
 
 ``` r
 de_info_per_parent <- pbmapply(function(de, ann) prepareDeInfo(de, ann, cm.raw=p2$misc$rawCounts, n.cores=10), 
@@ -212,14 +212,14 @@ Next, do TF-IDF normalization of the
 matrix:
 
 ``` r
-cm_norm <- cm_merged %>% normalizeTfIdfWithFeatures() %>% .[names(annotation), ]
+cm_norm <- cm_merged %>% normalizeTfIdfWithFeatures() %>% .[, names(annotation)]
 ```
 
 Now we can define blacklist of the genes, which shouldn’t be used as
 markers:
 
 ``` r
-marker_blacklist <- rownames(cm_merged) %>% .[grep("mt-", .)]
+marker_blacklist <- colnames(cm_merged) %>% .[grep("mt-", .)]
 ```
 
 Finally, we run marker selection for each of the
@@ -246,31 +246,33 @@ marker_info <- names(de_info_per_parent) %>% setNames(., .) %>% lapply(function(
 
     ## Running marker selection for parent type 'Dendritic1'
 
-    ## Iteration 5. Max uncertainty: 0.448, mean uncertainty: 0.3. Target type: Dendritic cell_Naaa high, gene: Ppt1
+    ## Iteration 5. Max uncertainty: 0.493, mean uncertainty: 0.298. Target type: Dendritic cell_Naaa high, gene: Rpl17
 
-    ## Iteration 10. Max uncertainty: 0.39, mean uncertainty: 0.272. Target type: Dividing dendritic cells, gene: Ptma
-
-    ## Refine markers...
-
-    ## Iteration 15. Max uncertainty: 0.311, mean uncertainty: 0.251. Target type: Dividing dendritic cells, gene: Cenpa
-
-    ## Iteration 20. Max uncertainty: 0.311, mean uncertainty: 0.251. Target type: Conventional dendritic cell_Tubb5 high, gene: Racgap1
+    ## Iteration 10. Max uncertainty: 0.393, mean uncertainty: 0.277. Target type: Conventional dendritic cell_Tubb5 high, gene: Hmgb1
 
     ## Refine markers...
 
-    ## Iteration 25. Max uncertainty: 0.296, mean uncertainty: 0.237. Target type: Dividing dendritic cells, gene: Pclaf
+    ## Iteration 15. Max uncertainty: 0.327, mean uncertainty: 0.237. Target type: Dendritic cell_Naaa high, gene: Ppt1
 
-    ## Iteration 30. Max uncertainty: 0.314, mean uncertainty: 0.227. Target type: Conventional dendritic cell_Tubb5 high, gene: Lgals1
+    ## Iteration 20. Max uncertainty: 0.327, mean uncertainty: 0.237. Target type: Conventional dendritic cell_Tubb5 high, gene: Birc5
 
     ## Refine markers...
 
-    ## Iteration 35. Max uncertainty: 0.314, mean uncertainty: 0.227. Target type: Conventional dendritic cell_Tubb5 high, gene: Ran
+    ## Iteration 25. Max uncertainty: 0.313, mean uncertainty: 0.237. Target type: Dividing dendritic cells, gene: Hmgn2
 
-    ## Iteration 40. Max uncertainty: 0.314, mean uncertainty: 0.227. Target type: Conventional dendritic cell_Tubb5 high, gene: Arl6ip1
+    ## Iteration 30. Max uncertainty: 0.32, mean uncertainty: 0.227. Target type: Conventional dendritic cell_Tubb5 high, gene: Tuba1c
 
-    ## Iteration 45. Max uncertainty: 0.314, mean uncertainty: 0.227. Target type: Conventional dendritic cell_Tubb5 high, gene: Ppia
+    ## Refine markers...
 
-    ## Iteration 50. Max uncertainty: 0.332, mean uncertainty: 0.21. Target type: Dividing dendritic cells, gene: Arl6ip1
+    ## Iteration 35. Max uncertainty: 0.29, mean uncertainty: 0.224. Target type: Dividing dendritic cells, gene: H2afz
+
+    ## Iteration 40. Max uncertainty: 0.286, mean uncertainty: 0.216. Target type: Conventional dendritic cell_Mgl2 high, gene: Nfkbiz
+
+    ## Refine markers...
+
+    ## Iteration 45. Max uncertainty: 0.263, mean uncertainty: 0.194. Target type: Dividing dendritic cells, gene: Anp32e
+
+    ## Iteration 50. Max uncertainty: 0.263, mean uncertainty: 0.194. Target type: Dividing dendritic cells, gene: Txn1
 
     ## Refine markers...
 
@@ -280,7 +282,9 @@ marker_info <- names(de_info_per_parent) %>% setNames(., .) %>% lapply(function(
 
     ## Running marker selection for parent type 'Endothelial'
 
-    ## Iteration 5. Max uncertainty: 0.225, mean uncertainty: 0.203. Target type: Endothelial cell_Tmem100 high, gene: Plvap
+    ## Iteration 5. Max uncertainty: 0.26, mean uncertainty: 0.196. Target type: Endothelial cell_Tmem100 high, gene: Plvap
+
+    ## Iteration 10. Max uncertainty: 0.227, mean uncertainty: 0.191. Target type: Endothelial cell_Tmem100 high, gene: Epas1
 
     ## Refine markers...
 
@@ -290,7 +294,7 @@ marker_info <- names(de_info_per_parent) %>% setNames(., .) %>% lapply(function(
 
     ## Running marker selection for parent type 'Macrophage'
 
-    ## Iteration 5. Max uncertainty: 0.291, mean uncertainty: 0.209. Target type: Alveolar macrophage_Ear2 high, gene: Map1lc3b
+    ## Iteration 5. Max uncertainty: 0.329, mean uncertainty: 0.219. Target type: Alveolar macrophage_Ear2 high, gene: Cytip
 
     ## Refine markers...
 
@@ -300,31 +304,51 @@ marker_info <- names(de_info_per_parent) %>% setNames(., .) %>% lapply(function(
 
     ## Running marker selection for parent type 'root'
 
-    ## Iteration 5. Max uncertainty: 0.932, mean uncertainty: 0.722. Target type: Clara Cell, gene: 5330417C22Rik
+    ## Iteration 5. Max uncertainty: 0.932, mean uncertainty: 0.756. Target type: B, gene: Ly6d
 
-    ## Iteration 10. Max uncertainty: 0.935, mean uncertainty: 0.516. Target type: Granulocyte, gene: Clec4d
-
-    ## Refine markers...
-
-    ## Iteration 15. Max uncertainty: 0.573, mean uncertainty: 0.38. Target type: Macrophage, gene: Ear2
-
-    ## Iteration 20. Max uncertainty: 0.532, mean uncertainty: 0.349. Target type: Alveolar, gene: Cxcl15
+    ## Iteration 10. Max uncertainty: 0.947, mean uncertainty: 0.565. Target type: Clara Cell, gene: Pigr
 
     ## Refine markers...
 
-    ## Iteration 25. Max uncertainty: 0.499, mean uncertainty: 0.336. Target type: Dividing cells, gene: Stmn1
+    ## Iteration 15. Max uncertainty: 0.55, mean uncertainty: 0.386. Target type: Dendritic, gene: S100a4
 
-    ## Iteration 30. Max uncertainty: 0.476, mean uncertainty: 0.329. Target type: Monocyte progenitor cell, gene: Ly6c2
+    ## Iteration 20. Max uncertainty: 0.447, mean uncertainty: 0.344. Target type: B, gene: Ms4a1
 
     ## Refine markers...
 
-    ## Iteration 35. Max uncertainty: 0.476, mean uncertainty: 0.329. Target type: Monocyte progenitor cell, gene: Psap
+    ## Warning in mean.default(X[[i]], ...): argument is not numeric or logical:
+    ## returning NA
+    
+    ## Warning in mean.default(X[[i]], ...): argument is not numeric or logical:
+    ## returning NA
+    
+    ## Warning in mean.default(X[[i]], ...): argument is not numeric or logical:
+    ## returning NA
+    
+    ## Warning in mean.default(X[[i]], ...): argument is not numeric or logical:
+    ## returning NA
 
-    ## Iteration 40. Max uncertainty: 0.476, mean uncertainty: 0.329. Target type: Monocyte progenitor cell, gene: Prdx5
+    ## Warning in FUN(X[[i]], ...): no non-missing arguments to min; returning Inf
+    
+    ## Warning in FUN(X[[i]], ...): no non-missing arguments to min; returning Inf
+    
+    ## Warning in FUN(X[[i]], ...): no non-missing arguments to min; returning Inf
+    
+    ## Warning in FUN(X[[i]], ...): no non-missing arguments to min; returning Inf
 
-    ## Iteration 45. Max uncertainty: 0.476, mean uncertainty: 0.329. Target type: Monocyte progenitor cell, gene: Capzb
+    ## Iteration 25. Max uncertainty: 0.425, mean uncertainty: 0.312. Target type: Granulocyte, gene: S100a9
 
-    ## Iteration 50. Max uncertainty: 0.476, mean uncertainty: 0.329. Target type: Monocyte progenitor cell, gene: S100a4
+    ## Iteration 30. Max uncertainty: 0.425, mean uncertainty: 0.312. Target type: Dendritic, gene: Lsp1
+
+    ## Refine markers...
+
+    ## Iteration 35. Max uncertainty: 0.425, mean uncertainty: 0.312. Target type: Dendritic, gene: Lgals3
+
+    ## Iteration 40. Max uncertainty: 0.425, mean uncertainty: 0.312. Target type: Dendritic, gene: Cd52
+
+    ## Iteration 45. Max uncertainty: 0.425, mean uncertainty: 0.312. Target type: Dendritic, gene: Tyrobp
+
+    ## Iteration 50. Max uncertainty: 0.425, mean uncertainty: 0.312. Target type: Dendritic, gene: S100a6
 
     ## Running marker selection for parent type 'Stromal'
 
@@ -335,7 +359,7 @@ marker_info <- names(de_info_per_parent) %>% setNames(., .) %>% lapply(function(
     ## Warning in preSelectMarkerCandidates(de_info_per_parent[[n]], blacklist =
     ## marker_blacklist): Some cell types don't have positive or negative markers
 
-    ## Iteration 5. Max uncertainty: 0.314, mean uncertainty: 0.244. Target type: Nuocyte, gene: Icos
+    ## Iteration 5. Max uncertainty: 0.393, mean uncertainty: 0.25. Target type: Nuocyte, gene: Hspa1a
 
     ## Refine markers...
 
@@ -368,7 +392,7 @@ matrix:
 
 ``` r
 lapply(marker_list_prior, `[`, c("expressed", "not_expressed")) %>% unlist() %>% 
-  setdiff(colnames(cm_norm))
+  setdiff(rownames(cm_norm))
 ```
 
     ## character(0)
@@ -395,15 +419,31 @@ marker_info <- names(de_info_per_parent) %>% setNames(., .) %>% lapply(function(
 
     ## Running marker selection for parent type 'Dendritic1'
 
-    ## Iteration 5. Max uncertainty: 0.651, mean uncertainty: 0.356. Target type: Dividing dendritic cells, gene: Ptma
+    ## Iteration 5. Max uncertainty: 0.728, mean uncertainty: 0.359. Target type: Dividing dendritic cells, gene: Irf8
 
-    ## Iteration 10. Max uncertainty: 0.364, mean uncertainty: 0.27. Target type: Dividing dendritic cells, gene: Cenpa
+    ## Iteration 10. Max uncertainty: 0.488, mean uncertainty: 0.304. Target type: Conventional dendritic cell_Tubb5 high, gene: Racgap1
+
+    ## Refine markers...
+
+    ## Iteration 15. Max uncertainty: 0.434, mean uncertainty: 0.286. Target type: Conventional dendritic cell_Tubb5 high, gene: Pclaf
+
+    ## Iteration 20. Max uncertainty: 0.392, mean uncertainty: 0.27. Target type: Conventional dendritic cell_Tubb5 high, gene: Hmgb1
 
     ## Refine markers...
 
-    ## Iteration 15. Max uncertainty: 0.316, mean uncertainty: 0.258. Target type: Dividing dendritic cells, gene: Ube2c
+    ## Iteration 25. Max uncertainty: 0.366, mean uncertainty: 0.269. Target type: Dividing dendritic cells, gene: Dek
+
+    ## Iteration 30. Max uncertainty: 0.366, mean uncertainty: 0.269. Target type: Dividing dendritic cells, gene: Tuba1b
 
     ## Refine markers...
+
+    ## Iteration 35. Max uncertainty: 0.366, mean uncertainty: 0.269. Target type: Dividing dendritic cells, gene: Ranbp1
+
+    ## Iteration 40. Max uncertainty: 0.366, mean uncertainty: 0.269. Target type: Dividing dendritic cells, gene: Arl6ip1
+
+    ## Iteration 45. Max uncertainty: 0.366, mean uncertainty: 0.269. Target type: Dividing dendritic cells, gene: Txn1
+
+    ## Iteration 50. Max uncertainty: 0.366, mean uncertainty: 0.269. Target type: Dividing dendritic cells, gene: Ly6e
 
     ## Running marker selection for parent type 'Dendritic2'
 
@@ -411,7 +451,9 @@ marker_info <- names(de_info_per_parent) %>% setNames(., .) %>% lapply(function(
 
     ## Running marker selection for parent type 'Endothelial'
 
-    ## Iteration 5. Max uncertainty: 0.225, mean uncertainty: 0.203. Target type: Endothelial cell_Tmem100 high, gene: Plvap
+    ## Iteration 5. Max uncertainty: 0.26, mean uncertainty: 0.196. Target type: Endothelial cell_Tmem100 high, gene: Plvap
+
+    ## Iteration 10. Max uncertainty: 0.227, mean uncertainty: 0.191. Target type: Endothelial cell_Tmem100 high, gene: Epas1
 
     ## Refine markers...
 
@@ -421,7 +463,7 @@ marker_info <- names(de_info_per_parent) %>% setNames(., .) %>% lapply(function(
 
     ## Running marker selection for parent type 'Macrophage'
 
-    ## Iteration 5. Max uncertainty: 0.291, mean uncertainty: 0.209. Target type: Alveolar macrophage_Ear2 high, gene: Map1lc3b
+    ## Iteration 5. Max uncertainty: 0.329, mean uncertainty: 0.219. Target type: Alveolar macrophage_Ear2 high, gene: Cytip
 
     ## Refine markers...
 
@@ -431,31 +473,31 @@ marker_info <- names(de_info_per_parent) %>% setNames(., .) %>% lapply(function(
 
     ## Running marker selection for parent type 'root'
 
-    ## Iteration 5. Max uncertainty: 0.932, mean uncertainty: 0.722. Target type: Clara Cell, gene: 5330417C22Rik
+    ## Iteration 5. Max uncertainty: 0.932, mean uncertainty: 0.756. Target type: B, gene: Ly6d
 
-    ## Iteration 10. Max uncertainty: 0.935, mean uncertainty: 0.516. Target type: Granulocyte, gene: Clec4d
-
-    ## Refine markers...
-
-    ## Iteration 15. Max uncertainty: 0.573, mean uncertainty: 0.38. Target type: Macrophage, gene: Ear2
-
-    ## Iteration 20. Max uncertainty: 0.532, mean uncertainty: 0.349. Target type: Alveolar, gene: Cxcl15
+    ## Iteration 10. Max uncertainty: 0.947, mean uncertainty: 0.565. Target type: Clara Cell, gene: Pigr
 
     ## Refine markers...
 
-    ## Iteration 25. Max uncertainty: 0.499, mean uncertainty: 0.337. Target type: Dividing cells, gene: Stmn1
+    ## Iteration 15. Max uncertainty: 0.58, mean uncertainty: 0.387. Target type: Dendritic, gene: S100a4
 
-    ## Iteration 30. Max uncertainty: 0.476, mean uncertainty: 0.33. Target type: Monocyte progenitor cell, gene: Ly6c2
+    ## Iteration 20. Max uncertainty: 0.491, mean uncertainty: 0.345. Target type: B, gene: Ms4a1
 
     ## Refine markers...
 
-    ## Iteration 35. Max uncertainty: 0.476, mean uncertainty: 0.33. Target type: Monocyte progenitor cell, gene: Psap
+    ## Iteration 25. Max uncertainty: 0.423, mean uncertainty: 0.306. Target type: Granulocyte, gene: S100a9
 
-    ## Iteration 40. Max uncertainty: 0.476, mean uncertainty: 0.33. Target type: Monocyte progenitor cell, gene: Prdx5
+    ## Iteration 30. Max uncertainty: 0.423, mean uncertainty: 0.306. Target type: Dendritic, gene: Lsp1
 
-    ## Iteration 45. Max uncertainty: 0.476, mean uncertainty: 0.33. Target type: Monocyte progenitor cell, gene: Capzb
+    ## Refine markers...
 
-    ## Iteration 50. Max uncertainty: 0.476, mean uncertainty: 0.33. Target type: Monocyte progenitor cell, gene: S100a4
+    ## Iteration 35. Max uncertainty: 0.423, mean uncertainty: 0.306. Target type: Dendritic, gene: Cotl1
+
+    ## Iteration 40. Max uncertainty: 0.423, mean uncertainty: 0.306. Target type: Dendritic, gene: Cd52
+
+    ## Iteration 45. Max uncertainty: 0.423, mean uncertainty: 0.306. Target type: Dendritic, gene: Tyrobp
+
+    ## Iteration 50. Max uncertainty: 0.423, mean uncertainty: 0.306. Target type: Dendritic, gene: Arpc1b
 
     ## Running marker selection for parent type 'Stromal'
 
@@ -466,7 +508,7 @@ marker_info <- names(de_info_per_parent) %>% setNames(., .) %>% lapply(function(
     ## Warning in preSelectMarkerCandidates(de_info_per_parent[[n]], blacklist =
     ## marker_blacklist): Some cell types don't have positive or negative markers
 
-    ## Iteration 5. Max uncertainty: 0.314, mean uncertainty: 0.244. Target type: Nuocyte, gene: Icos
+    ## Iteration 5. Max uncertainty: 0.393, mean uncertainty: 0.25. Target type: Nuocyte, gene: Hspa1a
 
     ## Refine markers...
 
@@ -490,42 +532,42 @@ sapply(marker_list, sapply, length)[1:2,] %>% t()
     ## Ig-producing B cell                            1             0
     ## Dendritic1                                     1             1
     ## Dendritic2                                     1             0
-    ## Conventional dendritic cell_H2-M2 high         1             0
-    ## Conventional dendritic cell_Mgl2 high          2             2
-    ## Conventional dendritic cell_Tubb5 high         6             5
-    ## Dendritic cell_Naaa high                       3             4
-    ## Dividing dendritic cells                       5             5
-    ## Conventional dendritic cell_Gngt2 high         2             4
+    ## Conventional dendritic cell_H2-M2 high         1             1
+    ## Conventional dendritic cell_Mgl2 high          1             0
+    ## Conventional dendritic cell_Tubb5 high         6             4
+    ## Dendritic cell_Naaa high                       1             0
+    ## Dividing dendritic cells                       6             6
+    ## Conventional dendritic cell_Gngt2 high         1             2
     ## Plasmacytoid dendritic cell                    1             1
-    ## Endothelial cell_Kdr high                      1             2
-    ## Endothelial cell_Tmem100 high                  3             4
+    ## Endothelial cell_Kdr high                      1             1
+    ## Endothelial cell_Tmem100 high                  3             3
     ## Endothelial cells_Vwf high                     1             0
     ## Eosinophil granulocyte                         1             1
     ## Neutrophil granulocyte                         1             0
-    ## Alveolar macrophage_Ear2 high                  4             6
+    ## Alveolar macrophage_Ear2 high                  3             6
     ## Alveolar macrophage_Pclaf high                 2             1
     ## Interstitial macrophage                        1             0
     ## NK Cell                                        1             0
-    ## T                                              1             1
-    ## Alveolar                                       2             4
+    ## T                                              1             0
+    ## Alveolar                                       3             5
     ## B                                              2             2
     ## Basophil                                       1             0
     ## Ciliated cell                                  1             0
-    ## Clara Cell                                     2             3
-    ## Dendritic                                      2             4
-    ## Dividing cells                                 2             1
+    ## Clara Cell                                     2             2
+    ## Dendritic                                      2             0
+    ## Dividing cells                                 2             2
     ## Endothelial                                    1             2
-    ## Granulocyte                                    1             2
-    ## Macrophage                                     2             2
-    ## Monocyte progenitor cell                       2             1
-    ## NK_T                                           2             4
-    ## Stromal                                        1             0
+    ## Granulocyte                                    2             2
+    ## Macrophage                                     4             3
+    ## Monocyte progenitor cell                       1             0
+    ## NK_T                                           2             2
+    ## Stromal                                        1             1
     ## Stromal cell_Acta2 high                        1             1
-    ## Stromal cell_Dcn high                          2             2
+    ## Stromal cell_Dcn high                          2             1
     ## Stromal cell_Inmt high                         1             2
     ## Dividing T cells                               1             0
-    ## Nuocyte                                        3             4
-    ## T Cell_Cd8b1 high                              2             4
+    ## Nuocyte                                        5             6
+    ## T Cell_Cd8b1 high                              1             2
 
 To evaluate quality of these markers we can annotate cell using them and
 use the uncertainty plots.

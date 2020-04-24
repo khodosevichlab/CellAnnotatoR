@@ -140,13 +140,13 @@ de_info_per_parent <- pbmapply(function(de, ann) prepareDeInfo(de, ann, cm.raw=p
 Next, do TF-IDF normalization of the matrix:
 
 ```{r}
-cm_norm <- cm_merged %>% normalizeTfIdfWithFeatures() %>% .[names(annotation), ]
+cm_norm <- cm_merged %>% normalizeTfIdfWithFeatures() %>% .[, names(annotation)]
 ```
 
 Now we can define blacklist of the genes, which shouldn't be used as markers:
 
 ```{r}
-marker_blacklist <- rownames(cm_merged) %>% .[grep("mt-", .)]
+marker_blacklist <- colnames(cm_merged) %>% .[grep("mt-", .)]
 ```
 
 Finally, we run marker selection for each of the sub-branches:
@@ -182,7 +182,7 @@ Check, which markers aren't presented in the matrix:
 
 ```{r}
 lapply(marker_list_prior, `[`, c("expressed", "not_expressed")) %>% unlist() %>% 
-  setdiff(colnames(cm_norm))
+  setdiff(rownames(cm_norm))
 ```
 
 ```{r}

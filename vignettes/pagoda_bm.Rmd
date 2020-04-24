@@ -50,7 +50,7 @@ conos::embeddingPlot(p2$embeddings$PCA$tSNE, groups=clusters, shuffle.colors=T)
 Prepare data for annotation:
 
 ```{r}
-marker_path <- system.file("extdata", "bm_cb.md", package = "CellAnnotatoR")
+marker_path <- system.file("extdata", "bm_cb.md", package="CellAnnotatoR")
 clf_data <- getClassificationData(cm, marker_path)
 ```
 
