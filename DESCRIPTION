@@ -16,17 +16,19 @@ Imports:
     tibble,
     magrittr,
     cowplot,
-    Rcpp
+    Rcpp,
+    sccore (>= 0.1)
 Suggests:
     ggtree (>= 1.99.1),
     knitr,
     rmarkdown,
     ggpubr,
     testthat
-Remotes: 
+Remotes:
     hms-dbmi/conos,
+    hms-dbmi/sccore,
     YuLab-SMU/ggtree
-RoxygenNote: 7.0.2
+RoxygenNote: 7.1.0
 VignetteBuilder: knitr
-LinkingTo: 
+LinkingTo:
     Rcpp

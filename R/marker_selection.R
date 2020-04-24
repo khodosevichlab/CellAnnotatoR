@@ -176,7 +176,7 @@ preSelectMarkersForType <- function(de.df, whitelist=NULL, blacklist=NULL, min.p
   # Negative: ExpressionFraction < 0.1 && Z < 0 && top by specificity (or > 0.95)
 
   neg.markers <- de.df %>% .[(.$Z < 0) & (.$ExpressionFraction < max.neg.expression.frac), ] %>% .$Gene
-  return(list(positive=pos.markers[!is.na(pos.markers)], negative=neg.markers[!is.na(neg.markers)]))
+  return(list(positive=as.character(pos.markers[!is.na(pos.markers)]), negative=as.character(neg.markers[!is.na(neg.markers)])))
 }
 
 #' @inheritDotParams preSelectMarkersForType
@@ -345,8 +345,10 @@ prepareInitialMarkerList <- function(marker.list, cell.types, parent) {
   return(marker.list[cell.types])
 }
 
+#' Select Markers per Type
+#' @param cm.norm tf-idf-normalized count matrix with cells by columns and genes by rows
 #' @export
-selectMarkersPerType <- function(cm.norm, annotation, markers.per.type, marker.list=NULL, max.iters=ncol(cm.norm), parent=NULL,
+selectMarkersPerType <- function(cm.norm, annotation, markers.per.type, marker.list=NULL, max.iters=nrow(cm.norm), parent=NULL,
                                  max.uncertainty=0.25, verbose=0, min.pos.markers=1, max.pos.markers=10, log.step=1, n.cores=1, refinement.period=10, return.all=F) {
   if (verbose > 0) message("Running marker selection for parent type '", parent, "'")
 
@@ -356,7 +358,7 @@ selectMarkersPerType <- function(cm.norm, annotation, markers.per.type, marker.l
 
   marker.list %<>% prepareInitialMarkerList(names(markers.per.type$positive), parent=parent)
 
-  cm.norm %<>% .[names(annotation), unique(unlist(markers.per.type))] %>% as.matrix()
+  cm.norm %<>% .[unique(unlist(markers.per.type)), names(annotation)] %>% as.matrix() %>% Matrix::t()
   mean.unc.per.type <- (1 - getMeanConfidencePerType(marker.list, cm.norm, annotation))
   did.refinement <- F
   for (i in 1:max.iters) {
@@ -426,6 +428,10 @@ prepareDeDf <- function(df, cell.type, annotation, cm.raw, low.expression.thresh
   return(sccore::appendSpecificityMetricsToDE(df, annotation, cell.type, cm.raw, low.expression.threshold=low.expression.threshold))
 }
 
+#' Prepare DE Info
+#' @param de.info list of data.frames with DE genes per cell type
+#' @param annotation character vector with cell annotation, named with cell ids
+#' @param cm.raw not normalized count matrix with cells by rows and genes by columns
 #' @export
 prepareDeInfo <- function(de.info, annotation, cm.raw, ..., n.cores=1, verbose=F) {
   res <- names(de.info) %>% setNames(., .) %>%

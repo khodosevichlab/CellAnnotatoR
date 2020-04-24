@@ -9,6 +9,7 @@
 
 - Fixed multiple bugs
 - Removed Garnett dependency
+- Made `cm` parameter orientation consistent
 
 ## [0.1.2] - 2020-01-02
 

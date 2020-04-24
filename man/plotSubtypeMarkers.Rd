@@ -22,15 +22,11 @@ plotSubtypeMarkers(
 )
 }
 \arguments{
-\item{embedding}{two-column matrix with x and y coordinates of the embedding, rownames contain cell names and are used to match coordinates with groups or colors}
-
 \item{count.matrix}{gene expression matrix with genes by columns and cells by rows}
 
 \item{parent.type}{cell type for which the markers of the subtypes must be plotted}
 
 \item{marker.list}{list of markers per cell type. Can be obtained with `parseMarkerFile`}
-
-\item{show.legend}{show legend}
 
 \item{build.panel}{combine individual plots to a single panel}
 
@@ -43,29 +39,7 @@ plotSubtypeMarkers(
 \item{...}{
   Arguments passed on to \code{\link[conos:embeddingPlot]{conos::embeddingPlot}}
   \describe{
-    \item{\code{groups}}{vector of cluster labels, names contain cell names}
-    \item{\code{colors}}{vector of numbers, which must be shouwn with point colors, names contain cell names. This argument is ignored if groups are provided.}
-    \item{\code{subgroups}}{subset of 'groups', selecting the cells for plot. Ignored if 'groups' is NULL}
-    \item{\code{plot.na}}{plot points, for which groups / colors are missed (TRUE / FALSE)}
-    \item{\code{min.cluster.size}}{labels for all groups with number of cells fewer than this parameter are considered as missed. This argument is ignored if groups aren't provided}
-    \item{\code{mark.groups}}{plot cluster labels above points}
-    \item{\code{alpha}}{opacity level [0; 1]}
-    \item{\code{size}}{point size}
-    \item{\code{title}}{plot title}
-    \item{\code{plot.theme}}{theme for the plot}
-    \item{\code{palette}}{function, which accepts number of colors and return list of colors (i.e. see colorRampPalette)}
-    \item{\code{color.range}}{controls range, in which colors are estimated. Pass "all" to estimate range based on all values of "colors", pass "data" to estimate it only based on colors, presented in the embedding. Alternatively you can pass vector of length 2 with (min, max) values.}
-    \item{\code{font.size}}{font size for cluster labels. It can either be single number for constant font size or pair (min, max) for font size depending on cluster size}
-    \item{\code{show.ticks}}{show ticks and tick labels}
-    \item{\code{legend.position}}{vector with (x, y) positions of the legend}
-    \item{\code{legend.title}}{legend title}
-    \item{\code{gradient.range.quantile}}{Winsorization quantile for the numeric colors and gene gradient}
-    \item{\code{raster}}{should layer with the points be rasterized (TRUE/ FALSE)? Setting of this argument to TRUE is useful when you need to export a plot with large number of points}
-    \item{\code{raster.width}}{width of the plot in inches. Ignored if raster == FALSE.}
-    \item{\code{raster.height}}{height of the plot in inches. Ignored if raster == FALSE.}
-    \item{\code{raster.dpi}}{dpi of the rasterized plot. Ignored if raster == FALSE.}
-    \item{\code{shuffle.colors}}{shuffle colors}
-    \item{\code{keep.limits}}{Keep axis limits from original plot, useful when plotting subgroups, only meaningful it plot.na=F}
+    \item{\code{}}{}
   }}
 }
 \description{

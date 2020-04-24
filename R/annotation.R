@@ -178,13 +178,13 @@ assignCellsByScores <- function(graph, clf.data, score.info=NULL, clusters=NULL,
 #' Normalize TF-IDF with Features
 #' @description Normalize `cm` matrix using TF-IDF and then column-wise min-max scaling
 #'
-#' @param cm matrix to normalize. Rows are observations (e.g. cells) and columns are features (e.g. genes)
 #' @param max.quantile quantile to be used for max estimation during scaling
 #' @return Normalized matrix of the same shape as `cm`
+#' @inheritParams getClassificationData
 #'
 #' @export
 normalizeTfIdfWithFeatures <- function(cm, max.quantile=0.95, max.smooth=1e-10) {
-  cm %<>% as("dgCMatrix")
+  cm %<>% as("dgCMatrix") %>% Matrix::t()
   cm@x <- cm@x / rep(Matrix::colSums(cm), diff(cm@p))
   cm <- Matrix::t(cm)
 
@@ -269,8 +269,7 @@ getCellTypeScoreInfo <- function(markers, tf.idf, aggr=T) {
     c.submat <- tf.idf[, expressed.genes, drop=F]
     c.submat.t <- Matrix::t(c.submat)
     scores <- if (aggr) Matrix::colSums(c.submat.t) else c.submat
-    # max.positive.expr <- apply(c.submat.t, 2, max)
-    max.positive.expr <- sparseColMax(c.submat.t)
+    max.positive.expr <- apply(c.submat.t, 2, max)
   }
 
   not.expressed.genes <- intersect(markers$not_expressed, colnames(tf.idf))

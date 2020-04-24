@@ -18,7 +18,7 @@ plotOneUncertaintyPerClust(
 \item{text.angle}{angle of x-axis labels}
 
 \item{...}{
-  Arguments passed on to \code{\link[conos::styleEmbeddingPlot]{conos:::styleEmbeddingPlot}}
+  Arguments passed on to \code{\link[sccore::styleEmbeddingPlot]{sccore:::styleEmbeddingPlot}}
   \describe{
     \item{\code{}}{}
   }}

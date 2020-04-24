@@ -155,7 +155,7 @@ createClassificationTree <- function(marker.list) {
 #' @export
 getClassificationData <- function(cm, markers, prenormalized=F, data.gene.id.type="SYMBOL", marker.gene.id.type="SYMBOL", db=NULL, verbose=F) {
   if (!prenormalized) {
-    cm <- normalizeTfIdfWithFeatures(cm)
+    cm %<>% normalizeTfIdfWithFeatures()
   }
 
   gi <- unifyGeneIds(cm, data.gene.id.type=data.gene.id.type, marker.gene.id.type=marker.gene.id.type, db=db, verbose=verbose)

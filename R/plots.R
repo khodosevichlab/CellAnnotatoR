@@ -190,7 +190,7 @@ plotUncertaintyPerCell <- function(embedding, uncertainty.info, palette=colorRam
 
 #' Plot One Uncertainty per Cluster
 #' @param text.angle angle of x-axis labels
-#' @inheritDotParams conos:::styleEmbeddingPlot
+#' @inheritDotParams sccore:::styleEmbeddingPlot
 plotOneUncertaintyPerClust <- function(uncertainty.per.clust, clusters, annotation=NULL, ann.per.clust=NULL, threshold=0.5, text.angle=45, ...) {
   p.df <- tibble::enframe(uncertainty.per.clust, name="Cluster", value="Uncertainty")
   p.aes <- ggplot2::aes()
@@ -208,7 +208,7 @@ plotOneUncertaintyPerClust <- function(uncertainty.per.clust, clusters, annotati
     ggplot2::theme(axis.text.x=ggplot2::element_text(angle=text.angle, hjust=1)) +
     ggplot2::geom_hline(ggplot2::aes(yintercept=threshold)) + ggplot2::ylim(0, 1)
 
-  gg %<>% conos:::styleEmbeddingPlot(show.ticks=T, show.labels=T, ...)
+  gg %<>% sccore:::styleEmbeddingPlot(show.ticks=T, show.labels=T, ...)
 
   return(gg + ggplot2::labs(x="", y="Uncertainty"))
 }
