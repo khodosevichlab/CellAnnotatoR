@@ -4,16 +4,15 @@
 \alias{normalizeTfIdfWithFeatures}
 \title{Normalize TF-IDF with Features}
 \usage{
-normalizeTfIdfWithFeatures(cm, max.quantile = 0.95, max.smooth = 1e-10)
+normalizeTfIdfWithFeatures(cm, ...)
 }
 \arguments{
-\item{cm}{gene count matrix with cells by columns and genes by rows. May be in raw, TC-normalized or tf-idf-normalized format (in case of tf-idf, `prenormalized` must be set to `T`)}
-
-\item{max.quantile}{quantile to be used for max estimation during scaling}
-}
-\value{
-Normalized matrix of the same shape as `cm`
+\item{...}{
+  Arguments passed on to \code{\link[=normalizeTCWithFeatures]{normalizeTCWithFeatures}}
+  \describe{
+    \item{\code{max.quantile}}{quantile to be used for max estimation during scaling}
+  }}
 }
 \description{
-Normalize `cm` matrix using TF-IDF and then column-wise min-max scaling
+Normalize `cm` matrix using total counts, column-wise min-max scaling and then IDF normalization
 }

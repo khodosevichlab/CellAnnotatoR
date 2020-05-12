@@ -175,17 +175,17 @@ assignCellsByScores <- function(graph, clf.data, score.info=NULL, clusters=NULL,
 
 ## Score assignment
 
-#' Normalize TF-IDF with Features
-#' @description Normalize `cm` matrix using TF-IDF and then column-wise min-max scaling
+#' Normalize Total Count with Features
+#' @description Normalize `cm` matrix using total counts and then column-wise min-max scaling
 #'
 #' @param max.quantile quantile to be used for max estimation during scaling
 #' @return Normalized matrix of the same shape as `cm`
 #' @inheritParams getClassificationData
 #'
 #' @export
-normalizeTfIdfWithFeatures <- function(cm, max.quantile=0.95, max.smooth=1e-10) {
-  cm %<>% as("dgCMatrix") %>% Matrix::t()
-  
+normalizeTCWithFeatures <- function(cm, max.quantile=0.95, max.smooth=1e-10, transpose=T) {
+  cm %<>% as("dgCMatrix") %>% Matrix::drop0()
+
   # Total count normalization (i.e. TF-step)
   cm@x <- cm@x / rep(Matrix::colSums(cm), diff(cm@p))
   cm <- Matrix::t(cm)
@@ -195,13 +195,26 @@ normalizeTfIdfWithFeatures <- function(cm, max.quantile=0.95, max.smooth=1e-10) 
   max.vals[is.null(max.vals)] <- c()
   max.vals %<>% sapply(quantile, max.quantile) %>% `+`(max.smooth) # Robust alternative to maximum
 
-  cm@x <- cm@x / rep(max.vals, diff(cm@p)) # fast way to do column (row?)-wise normalization for sparse matrices
+  cm@x <- cm@x / rep(max.vals, diff(cm@p)) # fast way to do columnwise normalization for sparse matrices
+  cm@x %<>% pmin(1.0)
 
-  tf.idf <- cm
+  if (!transpose)
+    return(cm)
+
+  return(Matrix::t(cm))
+}
+
+#' Normalize TF-IDF with Features
+#' @description Normalize `cm` matrix using total counts, column-wise min-max scaling and then IDF normalization
+#' @inheritDotParams normalizeTCWithFeatures max.quantile max.smooth
+#'
+#' @export
+normalizeTfIdfWithFeatures <- function(cm, ...) {
+  tf.idf <- normalizeTCWithFeatures(cm, transpose=F, ...)
   # IDF-factors: log(1 + fraction of expressing cells)
   idf.weights <- log(1 + nrow(tf.idf) / (Matrix::colSums(tf.idf > 0) + 1))
   tf.idf@x <- tf.idf@x * rep(idf.weights, diff(tf.idf@p))
-  return(tf.idf)
+  return(Matrix::t(tf.idf))
 }
 
 #' Get Marker Score Info
