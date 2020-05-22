@@ -22,6 +22,7 @@ aggregateScoreChangePerGene <- function(d.scores, annotation, marker.type, cell.
   return(res)
 }
 
+#' @description For each marker candidate it estimate change in positive scores comparing to the current marker
 estimatePositiveMarkerScoreChange <- function(cell.type, annotation, cm.norm, de.genes, pos.scores, neg.scores, sum.scores, aggr=T, ...) {
   if (length(de.genes) == 0)
     stop("de.genes are empty for ", cell.type)
@@ -237,6 +238,8 @@ getTopNegativeGenes <- function(pos.gene, cell.type, cm.norm, annotation, cur.ne
 getNextMarkers <- function(cell.type, cm.norm, annotation, marker.list, markers.per.type, n.pos.genes=3,
                            n.neg.genes=10, score.change.threshold=0.05, verbose=F, n.cores=1) {
   s.info <- lapply(marker.list, getCellTypeScoreInfo, cm.norm) %>% prepareMarkerScoringInfo()
+
+  # Score change per cell per marker candidate
   pos.score.changes <- estimatePositiveMarkerScoreChange(cell.type, annotation, cm.norm, markers.per.type$positive[[cell.type]],
                                                          s.info$pos.scores, s.info$neg.scores, s.info$sum.scores, aggr=F)
 
@@ -294,6 +297,7 @@ getMeanConfidencePerType <- function(marker.list, cm.norm, annotation) {
   return(confidence %>% split(annotation[names(.)]) %>% sapply(mean))
 }
 
+#' @description removes redundant markers from the list, using greedy approach. Re-runs itself recursively untill there is nothing to remove.
 filterMarkerListByScore <- function(marker.list, cm.norm, annotation, verbose=F, n.cores=1, do.recursive=T, change.threshold=1e-5) {
   mls.filt <- generateFilteredMarkerLists(marker.list)
   if (length(mls.filt) == 0)
@@ -346,6 +350,9 @@ prepareInitialMarkerList <- function(marker.list, cell.types, parent) {
 }
 
 #' Select Markers per Type
+#'
+#' @param markers.per.type marker candidate per type
+#' @param marker.list list of already known markers per type, potentially empty
 #' @param cm.norm tf-idf-normalized count matrix with cells by columns and genes by rows
 #' @export
 selectMarkersPerType <- function(cm.norm, annotation, markers.per.type, marker.list=NULL, max.iters=nrow(cm.norm), parent=NULL,
@@ -358,25 +365,36 @@ selectMarkersPerType <- function(cm.norm, annotation, markers.per.type, marker.l
 
   marker.list %<>% prepareInitialMarkerList(names(markers.per.type$positive), parent=parent)
 
+  # For better performance, remove all genes, we don't use
   cm.norm %<>% .[unique(unlist(markers.per.type)), names(annotation)] %>% as.matrix() %>% Matrix::t()
+
+  # Initialize current uncertainty per type to be able to find the least annotated types
   mean.unc.per.type <- (1 - getMeanConfidencePerType(marker.list, cm.norm, annotation))
+
   did.refinement <- F
   for (i in 1:max.iters) {
-    n.markers.per.cell <- sapply(marker.list, function(x) length(x$expressed))[names(mean.unc.per.type)]
-    type.mask <- (n.markers.per.cell < max.pos.markers) & (sapply(markers.per.type$positive, length)[names(mean.unc.per.type)] > 0)
+    n.markers.per.type <- sapply(marker.list, function(x) length(x$expressed))[names(mean.unc.per.type)]
+
+    # Only markers for types with n.markers < max.pos.markers are updated
+    type.mask <- (n.markers.per.type < max.pos.markers) & (sapply(markers.per.type$positive, length)[names(mean.unc.per.type)] > 0)
     if (sum(type.mask) == 0)
       break
 
-    cell.type <- mean.unc.per.type[type.mask] %>% which.max() %>% names()
+    cell.type <- mean.unc.per.type[type.mask] %>% which.max() %>% names() # The most uncertaint cell type
+
+    # Get one positive marker, which minimizes uncertainty per this cell type. Can be accompanied by 1-2 negative markers.
     m.update <- getNextMarkers(cell.type, cm.norm, annotation, marker.list=marker.list, markers.per.type=markers.per.type,
                                verbose=(verbose > 1), n.cores=n.cores)
 
+    # Update current marker list
     marker.list.new <- marker.list
     marker.list.new[[cell.type]]$expressed %<>% union(m.update$expressed)
     marker.list.new[[cell.type]]$not_expressed %<>% union(m.update$not_expressed)
 
+    # Remove this marker from candidates
     markers.per.type %<>% updateMarkersPerType(marker.list=setNames(list(m.update), cell.type))
 
+    # Check if the new marker improves mean uncertainty, and if it does, add it to the list
     mean.unc.per.type.new <- (1 - getMeanConfidencePerType(marker.list.new, cm.norm, annotation))
     if (mean(mean.unc.per.type.new) < mean(mean.unc.per.type)) {
       mean.unc.per.type <- mean.unc.per.type.new
@@ -392,6 +410,7 @@ selectMarkersPerType <- function(cm.norm, annotation, markers.per.type, marker.l
     if ((max(mean.unc.per.type) < max.uncertainty) && (sapply(marker.list, function(x) length(x$expressed)) >= min.pos.markers))
       break
 
+    # At some point, some markers can become redundant (or even harmful). So we want to filter them out.
     if ((refinement.period > 0) && (i %% refinement.period == 0) && !did.refinement) {
       if (verbose) message("Refine markers...")
       marker.list %<>% filterMarkerListByScore(cm.norm, annotation, verbose=(verbose > 1), n.cores=n.cores)
