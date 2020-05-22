@@ -52,6 +52,14 @@ classificationTreeToDf <- function(classification.tree) {
     }) %>%  Reduce(rbind, .)
 }
 
+classificationTreeToHierarhy <- function(clf.tree, max.depth=NULL) {
+  hierarchy.df <- classificationTreeToDf(clf.tree)
+  if (!is.null(max.depth)) {
+    hierarchy.df %<>% dplyr::filter(PathLen <= max.depth)
+  }
+  hierarchy.df %$% setdiff(Node, Parent) %>% mergeAnnotationByLevels(clf.tree) %>% as_tibble() %>% splitDfByNextCol()
+}
+
 getAllSubtypes <- function(parent.type, classification.tree, max.depth=NULL) {
   paths <- igraph::dfs(classification.tree, parent.type, neimode="out", unreachable=F, dist=T)
   paths <- if (!is.null(max.depth)) names(which(paths$dist <= max.depth)) else names(paths$order)
@@ -67,6 +75,13 @@ getAnnotationPerCluster <- function(annotation, clusters) {
     setNames(colnames(ann.per.clust))
 
   return(ann.per.clust)
+}
+
+splitDfByNextCol <- function(df) {
+  if (ncol(df) == 1)
+    return(df[[1]])
+
+  return(lapply(split(df[2:ncol(df)], df[[1]]), splitDfByNextCol))
 }
 
 ## Validation

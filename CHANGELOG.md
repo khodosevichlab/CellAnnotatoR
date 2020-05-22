@@ -1,3 +1,13 @@
+## [Upcoming]
+
+### Added
+
+- `extractCellTypeProbs` function for estimating annotation proabilities
+
+### Fixed
+
+- Wrong normalization in normalizeTfIdf
+
 ## [0.2.0] - 2020-04-24
 
 ### Added

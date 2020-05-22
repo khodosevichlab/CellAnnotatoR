@@ -23,6 +23,10 @@ selectMarkersPerType(
 }
 \arguments{
 \item{cm.norm}{tf-idf-normalized count matrix with cells by columns and genes by rows}
+
+\item{markers.per.type}{marker candidate per type}
+
+\item{marker.list}{list of already known markers per type, potentially empty}
 }
 \description{
 Select Markers per Type
