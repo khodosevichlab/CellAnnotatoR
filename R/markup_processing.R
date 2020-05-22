@@ -235,7 +235,7 @@ markerListToMarkup <- function(marker.list, file="", group.by.parent=T) {
     }
 
     ml.per.parent <- marker.list %>% split(sapply(., `[[`, "parent")) %$%
-      c(list(root="root"), .[names(.) != "root"])
+      c(list(root=root), .[names(.) != "root"])
     markup.text <- names(ml.per.parent) %>% lapply(function(pn)
       paste0("## ", pn, "\n\n", markerListToMarkup(ml.per.parent[[pn]], group.by.parent=F))) %>%
       paste0(collapse="")
