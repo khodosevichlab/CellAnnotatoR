@@ -304,7 +304,7 @@ getCellTypeScoreInfo <- function(markers, tf.idf, aggr=T) {
 }
 
 normalizeScores <- function(scores, min.val=1e-10) {
-  scores[rowSums(scores) < 1e-10,] <- 1
+  scores[rowSums(scores) < min.val,] <- 1
   scores  %<>% `/`(rowSums(.))
   return(scores)
 }
