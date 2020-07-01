@@ -3,10 +3,11 @@
 ### Added
 
 - `extractCellTypeProbs` function for estimating annotation proabilities
+- Validations for missed subtypes in expansion to clusters
 
 ### Fixed
 
-- Wrong normalization in normalizeTfIdf
+- Fixed wrong normalization in `normalizeTfIdf`
 
 ## [0.2.0] - 2020-04-24
 

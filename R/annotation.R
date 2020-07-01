@@ -8,11 +8,28 @@ NULL
   library.dynam.unload("CellAnnotatoR", libpath)
 }
 
-expandAnnotationToClusters <- function(scores, clusters) {
-  clusters <- droplevels(clusters[rownames(scores)])
+expandAnnotationToClusters <- function(scores, clusters, quiet=F) {
+  clusters <- clusters[rownames(scores)] %>% as.factor() %>% droplevels()
   ann.update <- split(1:length(clusters), clusters) %>%
     sapply(function(cids) colSums(scores[cids, ,drop=F]) %>% which.max() %>% names()) %>%
     .[clusters] %>% setNames(names(clusters))
+
+  if (quiet || (length(unique(ann.update)) == ncol(scores)))
+    return(ann.update)
+
+  ann.old <- colnames(scores)[apply(scores, 1, which.max)]
+  ann.diff <- setdiff(colnames(scores), unique(ann.old))
+  if (length(ann.diff) > 0)
+    warning("The following cell types aren't present in the results: ", paste(ann.diff, collapse=', '))
+
+  ann.missed.clusts <- setdiff(unique(ann.old), unique(ann.update))
+  if (length(ann.missed.clusts) > 0) {
+    clust.candidates <- unique(clusters[ann.old %in% ann.missed.clusts])
+    warning("After cluster expansion, the following types are missed: ",
+            paste(ann.missed.clusts, collapse=', '),
+            ". Possible clusters for increasing resolution: ",
+            paste(clust.candidates, collapse=', '))
+  }
 
   return(ann.update)
 }
