@@ -8,6 +8,7 @@
 ### Fixed
 
 - Fixed wrong normalization in `normalizeTfIdf`
+- Fixed bug in marker selection
 
 ## [0.2.0] - 2020-04-24
 
