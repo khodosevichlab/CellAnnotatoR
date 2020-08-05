@@ -229,7 +229,7 @@ getTopNegativeGenes <- function(pos.gene, cell.type, cm.norm, annotation, cur.ne
     dplyr::mutate(NGene2=colnames(neg.scores)[top.neg.ids]) %>%  .[which.max(.$Score),]
 
   if ((res$Score - neg.score.base$Score) / abs(neg.score.base$Score) < score.change.threshold) {
-    res <- neg.score.base %>% rename(NGene1=Gene) %>% dplyr::mutate(NGene2=NA)
+    res <- neg.score.base %>% dplyr::rename(NGene1=Gene) %>% dplyr::mutate(NGene2=NA)
   }
 
   return(dplyr::mutate(res, PGene=pos.gene))
