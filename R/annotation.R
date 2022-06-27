@@ -63,9 +63,9 @@ diffuseGraph <- function(graph, scores, fading=10, fading.const=0.5, score.fixin
     return(scores)
 
   edge.weights <- igraph::edge.attributes(graph)$weight
-  res <- conos:::smoothMatrixOnGraph(edges, edge.weights, scores, is.label.fixed=is.fixed, max_n_iters=max.iters,
+  res <- conos:::smooth_count_matrix(edges, edge.weights, scores, is_label_fixed=is.fixed, max_n_iters=max.iters,
                                      diffusion_fading=fading, diffusion_fading_const=fading.const, verbose=verbose,
-                                     tol=tol, normalize=T)
+                                     tol=tol, normalize=TRUE)
   return(res)
 }
 

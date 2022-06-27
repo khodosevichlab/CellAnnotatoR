@@ -7,7 +7,7 @@
 #' @return panel of plots if `build.panel==T` or `plot.list` otherwise
 arrangePlots <- function(plot.list, build.panel, n.col=NULL, n.row=NULL, title.size=10) {
   if (build.panel) {
-    p.theme <- ggplot2::theme(plot.title=ggplot2::element_text(size=10, vjust=-1),
+    p.theme <- ggplot2::theme(plot.title=ggplot2::element_text(size=title.size, vjust=-1),
                               plot.margin=ggplot2::margin())
     plot.list %<>% lapply(`+`, p.theme)
     return(cowplot::plot_grid(plotlist=plot.list, ncol=n.col, nrow=n.row))
