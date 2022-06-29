@@ -6,7 +6,7 @@ Automated marker-based annotation of cell types
 This package uses [Conos](https://github.com/hms-dbmi/conos) label propagaton, so you need to install it as a dependency:
 
 ```r
-devtools::install_github("hms-dbmi/conos")
+install.packages("kharchenkolab/conos")
 ```
 
 Next, install CellAnnotatoR:

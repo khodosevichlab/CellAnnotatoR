@@ -1,3 +1,9 @@
+## [0.2.2] - 2022-06-29
+
+### Fixed
+
+- Fixed function calls for Conos updates
+
 ## [0.2.1] - 2020-09-03
 
 ### Added
