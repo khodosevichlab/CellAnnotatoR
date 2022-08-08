@@ -22,11 +22,15 @@ plotSubtypeMarkers(
 )
 }
 \arguments{
+\item{embedding}{two-column matrix with x and y coordinates of the embedding, rownames contain cell names and are used to match coordinates with groups or colors}
+
 \item{count.matrix}{gene expression matrix with genes by columns and cells by rows}
 
 \item{parent.type}{cell type for which the markers of the subtypes must be plotted}
 
 \item{marker.list}{list of markers per cell type. Can be obtained with `parseMarkerFile`}
+
+\item{show.legend}{show legend (default=FALSE)}
 
 \item{build.panel}{combine individual plots to a single panel}
 
@@ -37,9 +41,30 @@ plotSubtypeMarkers(
 \item{title.size}{font size for title of individual plots. Used only if build.panel==T}
 
 \item{...}{
-  Arguments passed on to \code{\link[conos:embeddingPlot]{conos::embeddingPlot}}
+  Arguments passed on to \code{\link[sccore:embeddingPlot]{sccore::embeddingPlot}}
   \describe{
-    \item{\code{}}{}
+    \item{\code{groups}}{vector of cluster labels, names contain cell names (default=NULL)}
+    \item{\code{colors}}{vector of numbers, which must be shown with point colors, names contain cell names (default=NULL). This argument is ignored if groups are provided.}
+    \item{\code{subgroups}}{subset of 'groups', selecting the cells for plot (default=NULL). Ignored if 'groups' is NULL}
+    \item{\code{plot.na}}{boolean/numeric Whether to plot points, for which groups / colors are missed (default=is.null(subgroups), i.e. FALSE). If plot.na passed a numeric value below 0, the NA symbols are plotted below the cells. Otherwise if values >=0, they’re plotted above the cells. Note that this argument is FALSE if 'subgroups' is NULL}
+    \item{\code{min.cluster.size}}{labels for all groups with number of cells fewer than this parameter are considered as missed (default=0). This argument is ignored if groups aren't provided}
+    \item{\code{mark.groups}}{plot cluster labels above points (default=TRUE)}
+    \item{\code{alpha}}{opacity level [0, 1] (default=0.4)}
+    \item{\code{size}}{point size (default=0.8)}
+    \item{\code{title}}{plot title (default=NULL)}
+    \item{\code{plot.theme}}{theme for the plot (default=NULL)}
+    \item{\code{palette}}{vector or list or function (default=NULL). Accepts number of colors and return list of colors (i.e. see 'colorRampPalette') (default=NULL)}
+    \item{\code{color.range}}{controls range, in which colors are estimated (default="symmetric"). Pass "all" to estimate range based on all values of "colors", pass "data" to estimate it only based on colors, presented in the embedding. Alternatively you can pass vector of length 2 with (min, max) values.}
+    \item{\code{font.size}}{font size for cluster labels (default=c(3, 7)). It can either be single number for constant font size or pair (min, max) for font size depending on cluster size}
+    \item{\code{show.ticks}}{show ticks and tick labels (default=FALSE)}
+    \item{\code{show.labels}}{show labels (default=FALSE)}
+    \item{\code{legend.position}}{vector with (x, y) positions of the legend (default=NULL)}
+    \item{\code{legend.title}}{legend title (default=NULL)}
+    \item{\code{gradient.range.quantile}}{Winsorization quantile for the numeric colors and gene gradient (default=1)}
+    \item{\code{raster}}{boolean whether layer with the points be rasterized (default=FALSE). Setting of this argument to TRUE is useful when you need to export a plot with large number of points}
+    \item{\code{raster.dpi}}{dpi of the rasterized plot. (default=300). Ignored if raster == FALSE.}
+    \item{\code{shuffle.colors}}{shuffle colors (default=FALSE)}
+    \item{\code{keep.limits}}{Keep axis limits from original plot (default=!is.null(subgroups)). Useful when plotting subgroups, only meaningful it plot.na=FALSE}
   }}
 }
 \description{

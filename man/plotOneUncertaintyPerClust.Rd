@@ -18,9 +18,16 @@ plotOneUncertaintyPerClust(
 \item{text.angle}{angle of x-axis labels}
 
 \item{...}{
-  Arguments passed on to \code{\link[sccore::styleEmbeddingPlot]{sccore:::styleEmbeddingPlot}}
+  Arguments passed on to \code{\link[sccore:NA]{sccore:::styleEmbeddingPlot}}
   \describe{
-    \item{\code{}}{}
+    \item{\code{gg}}{ggplot2 object to plot}
+    \item{\code{plot.theme}}{theme for the plot (default=NULL)}
+    \item{\code{title}}{plot title (default=NULL)}
+    \item{\code{legend.position}}{vector with (x, y) positions of the legend (default=NULL)}
+    \item{\code{show.legend}}{show legend (default=TRUE)}
+    \item{\code{show.ticks}}{show ticks and tick labels (default=TRUE)}
+    \item{\code{show.labels}}{show labels (default=TRUE)}
+    \item{\code{relabel.axis}}{boolean If TRUE, relabel axes with ggplot2::labs(x='Component 1', y='Component 2') (default=TRUE)}
   }}
 }
 \description{

@@ -105,7 +105,7 @@ splitClusteringDf <- function(df) {
 #'
 #' @export
 deriveHierarchy <- function(feature.matrix, annotation, dist.method="cor", max.depth=2) {
-  feature.matrix %<>% as("dgCMatrix") %>% conos:::collapseCellsByType(groups=annotation, min.cell.count=0)
+  feature.matrix %<>% as("dgCMatrix") %>% sccore::collapseCellsByType(groups=annotation, min.cell.count=0)
 
   if (dist.method == "cor") {
     c.dist <- (1 - cor(Matrix::t(feature.matrix))) %>% as.dist()

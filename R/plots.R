@@ -20,10 +20,10 @@ arrangePlots <- function(plot.list, build.panel, n.col=NULL, n.row=NULL, title.s
 #' @description plot assignment scores on a separate scatterplot for each cell type
 #' @param scores assignment scores. Can be obtained with `assignCellsByScores`
 #' @param parent.node cell type, which subtypes' scores must be plotted
-#' @inheritParams conos::embeddingPlot
+#' @inheritParams sccore::embeddingPlot
 #' @inheritParams classificationTreeToDf
 #' @inheritParams arrangePlots
-#' @inheritDotParams conos::embeddingPlot
+#' @inheritDotParams sccore::embeddingPlot
 #' @inherit arrangePlots return
 #' @examples
 #'   clf_data <- getClassificationData(cm, marker_path)
@@ -33,7 +33,7 @@ arrangePlots <- function(plot.list, build.panel, n.col=NULL, n.row=NULL, title.s
 plotAssignmentScores <- function(embedding, scores, classification.tree, parent.node="root", build.panel=T, n.col=NULL, n.row=NULL, title.size=12, ...) {
   classificationTreeToDf(classification.tree) %>%
     dplyr::filter(Parent == parent.node) %>% .$Node %>%
-    lapply(function(n) conos::embeddingPlot(embedding, colors=setNames(scores[, n], rownames(scores)),
+    lapply(function(n) sccore::embeddingPlot(embedding, colors=setNames(scores[, n], rownames(scores)),
                                              title=n, color.range=c(0, 1), ...)) %>%
     arrangePlots(build.panel=build.panel, n.row=n.row, n.col=n.col, title.size=title.size)
 }
@@ -43,13 +43,13 @@ plotAssignmentScores <- function(embedding, scores, classification.tree, parent.
 #' @param count.matrix gene expression matrix with genes by columns and cells by rows
 #' @param cell.type cell type for which the markers must be plotted
 #' @param marker.list list of markers per cell type. Can be obtained with `parseMarkerFile`
-#' @inheritParams conos::embeddingPlot
+#' @inheritParams sccore::embeddingPlot
 #' @inheritParams arrangePlots
-#' @inheritDotParams conos::embeddingPlot
+#' @inheritDotParams sccore::embeddingPlot
 #' @export
 plotTypeMarkers <- function(embedding, count.matrix, cell.type, marker.list, show.legend=T, build.panel=T, n.col=NULL, n.row=NULL, title.size=10, ...) {
   plot.func <- function(gene, title) {
-    conos::embeddingPlot(embedding, colors=count.matrix[,gene], show.legend=show.legend, title=title, ...)
+    sccore::embeddingPlot(embedding, colors=count.matrix[,gene], show.legend=show.legend, title=title, ...)
   }
 
   res <- marker.list[[cell.type]]$expressed %>% intersect(colnames(count.matrix)) %>%
@@ -108,11 +108,11 @@ extractMarkersFromSubtypes <- function(parent.type="root", clf.data=NULL, clf.tr
 #' @param count.matrix gene expression matrix with genes by columns and cells by rows
 
 #' @param marker.list list of markers per cell type. Can be obtained with `parseMarkerFile`
-#' @inheritParams conos::embeddingPlot
+#' @inheritParams sccore::embeddingPlot
 #' @inheritParams arrangePlots
 #' @inheritParams plotTypeMarkers
 #' @inheritParams extractMarkersFromSubtypes
-#' @inheritDotParams conos::embeddingPlot
+#' @inheritDotParams sccore::embeddingPlot
 #' @export
 plotSubtypeMarkers <- function(embedding, count.matrix, parent.type="root", clf.data=NULL, clf.tree=NULL, marker.list=NULL,
                                show.legend=F, max.depth=NULL, build.panel=T, n.col=NULL, n.row=NULL, marker.type=c("expressed", "not_expressed"),
@@ -123,7 +123,7 @@ plotSubtypeMarkers <- function(embedding, count.matrix, parent.type="root", clf.
   titles <- mapply(function(n,ts) paste0(n, ": ", ts), names(markers), lapply(markers, paste, collapse=", "))
   plots <- mapply(function(gene, title) {
     expr.vec <- if (gene %in% colnames(count.matrix)) count.matrix[,gene] else NA
-    conos::embeddingPlot(embedding, colors=expr.vec, show.legend=show.legend, title=title, ...)
+    sccore::embeddingPlot(embedding, colors=expr.vec, show.legend=show.legend, title=title, ...)
   },names(markers), titles, SIMPLIFY=F
   )
 
@@ -133,10 +133,10 @@ plotSubtypeMarkers <- function(embedding, count.matrix, parent.type="root", clf.
 #' @export
 plotAnnotationByLevels <- function(embedding, annotation.by.level, clusters=NULL, build.panel=T, n.col=NULL, n.row=NULL, title.size=12, ...) {
   res <- lapply(1:length(annotation.by.level),
-                function(i) conos::embeddingPlot(embedding, groups=annotation.by.level[[i]], title=paste("Level", i), ...))
+                function(i) sccore::embeddingPlot(embedding, groups=annotation.by.level[[i]], title=paste("Level", i), ...))
 
   if (!is.null(clusters)) {
-    res[[length(res) + 1]] <- conos::embeddingPlot(embedding, groups=clusters, title="Clustering", ...)
+    res[[length(res) + 1]] <- sccore::embeddingPlot(embedding, groups=clusters, title="Clustering", ...)
   }
 
   return(arrangePlots(res, build.panel=build.panel, n.row=n.row, n.col=n.col, title.size=title.size))
@@ -151,7 +151,7 @@ plotConfidenceByLevels <- function(embedding, annotation.by.level, scores, show.
     getAnnotationConfidence(annotation.by.level[[n]], scores[[n]]))
 
   res <- lapply(1:length(conf.per.level), function(i)
-    conos::embeddingPlot(embedding, colors=conf.per.level[[i]], title=paste("Level", i),
+    sccore::embeddingPlot(embedding, colors=conf.per.level[[i]], title=paste("Level", i),
                           legend.title="Confidence", show.legend=T, color.range=c(0, 1), ...))
 
   return(res)
@@ -179,12 +179,12 @@ plotTypeHierarchy <- function(classification.tree, layout="slanted", xlims=NULL,
 
 #' Uncertainty scatterplots per cell
 #' @param build.panel join plots to single panel
-#' @inheritDotParams conos::embeddingPlot
+#' @inheritDotParams sccore::embeddingPlot
 #' @export
 plotUncertaintyPerCell <- function(embedding, uncertainty.info, palette=colorRampPalette(c("gray", "#ffeda0", "#fec44f", "#f03b20")), alpha=0.3,
                                    build.panel=T, n.col=length(uncertainty.info), n.row=NULL, title.size=12, ...) {
   names(uncertainty.info) %>% setNames(., .) %>% lapply(function(n)
-    conos::embeddingPlot(embedding, colors=uncertainty.info[[n]], alpha=alpha, title=n, palette=palette, ...)) %>%
+    sccore::embeddingPlot(embedding, colors=uncertainty.info[[n]], alpha=alpha, title=n, palette=palette, ...)) %>%
     arrangePlots(build.panel=build.panel, n.col=n.col, n.row=n.row, title.size=title.size)
 }
 
@@ -296,11 +296,11 @@ plotExpressionViolinMap <- function(markers, count.matrix, annotation, text.angl
 #' @param embedding cell embedding
 #' @param cm count matrix with genes as columns
 #' @inheritParams arrangePlots
-#' @inheritDotParams conos::embeddingPlot
+#' @inheritDotParams sccore::embeddingPlot
 #' @export
 plotGeneExpression <- function(genes, embedding, cm, build.panel=T, n.col=NULL, n.row=NULL, title.size=12, ...) {
   res <- genes %>% setNames(., .) %>%
-    lapply(function(g) conos::embeddingPlot(embedding, colors=cm[, g], title=g, ...))
+    lapply(function(g) sccore::embeddingPlot(embedding, colors=cm[, g], title=g, ...))
 
   if (length(res) == 1)
     return(res[[1]])

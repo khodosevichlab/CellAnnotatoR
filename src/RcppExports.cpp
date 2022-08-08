@@ -5,6 +5,11 @@
 
 using namespace Rcpp;
 
+#ifdef RCPP_USE_GLOBAL_ROSTREAM
+Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
+Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
+#endif
+
 // estimateNewNegativeScores
 NumericMatrix estimateNewNegativeScores(NumericMatrix expression, const std::vector<double>& max_scores, const std::vector<double>& neg_scores);
 RcppExport SEXP _CellAnnotatoR_estimateNewNegativeScores(SEXP expressionSEXP, SEXP max_scoresSEXP, SEXP neg_scoresSEXP) {

@@ -42,7 +42,7 @@ annotationFromScores <- function(scores, clusters=NULL) {
 }
 
 #' Diffuse Score per Type
-#' @inheritDotParams diffuseGraph fading fading.const verbose tol score.fixing.threshold
+#' @inheritDotParams diffuseGraph fading fading.const verbose tol score.fixing.threshold smoothing.method beta
 diffuseScorePerType <- function(scores.per.type, graph, parents, cbs.per.type, verbose, n.cores=1, ...) {
   plapply(parents, function(p)
     diffuseGraph(igraph::induced_subgraph(graph, cbs.per.type[[p]]),
@@ -59,8 +59,13 @@ diffuseScorePerType <- function(scores.per.type, graph, parents, cbs.per.type, v
 #' @param score.fixing.threshold threshold for a label to be considered certain. Such labels can't be changed during diffusion.
 #' @param verbose print progress bar
 #' @param tol tolerance for diffusion stopping
+#' @param smoothing.method method to use for signal smoothing: `heat.filter` corresponds to smooting using graph filters (see \link[sccore:smoothSignalOnGraph]{smoothSignalOnGraph}),
+#'     while `knn` corresponds to kNN diffusion (see \link[sccore:smooth_count_matrix]{smooth_count_matrix}).
+#' @param beta smoothing strength for `smoothing.method='heat.filter'`
 diffuseGraph <- function(graph, scores, fading=10, fading.const=0.5, score.fixing.threshold=0.8,
-                         verbose=FALSE, max.iters=1000, tol=1e-3) {
+                         verbose=FALSE, max.iters=1000, tol=1e-3, smoothing.method=c("heat.filter", "knn"),
+                         beta=30) {
+  smoothing.method <- match.arg(smoothing.method)
   cbs <- igraph::V(graph)$name
   if (length(cbs) == 0)
     return(NULL)
@@ -72,17 +77,23 @@ diffuseGraph <- function(graph, scores, fading=10, fading.const=0.5, score.fixin
   if (any(is.na(scores)))
     stop("NAs in scores")
 
-  edges <- igraph::as_edgelist(graph)
+  if (smoothing.method == 'knn') {
+    edges <- igraph::as_edgelist(graph)
+    is.fixed <- (apply(scores, 1, max) > score.fixing.threshold)
 
-  is.fixed <- (apply(scores, 1, max) > score.fixing.threshold)
+    if (nrow(edges) == 0)
+      return(scores)
 
-  if (nrow(edges) == 0)
-    return(scores)
+    edge.weights <- igraph::edge.attributes(graph)$weight
+    res <- sccore::smooth_count_matrix(edges, edge.weights, scores, is_label_fixed=is.fixed, max_n_iters=max.iters,
+                                       diffusion_fading=fading, diffusion_fading_const=fading.const, verbose=verbose,
+                                       tol=tol, normalize=TRUE)
+  } else { # 'heat.filter'
+    res <- scores %>% sccore::smoothSignalOnGraph(
+      filter=function(...) sccore::heatFilter(..., beta=beta), graph=graph, n.cores=1, progress=verbose
+    )
+  }
 
-  edge.weights <- igraph::edge.attributes(graph)$weight
-  res <- conos:::smooth_count_matrix(edges, edge.weights, scores, is_label_fixed=is.fixed, max_n_iters=max.iters,
-                                     diffusion_fading=fading, diffusion_fading_const=fading.const, verbose=verbose,
-                                     tol=tol, normalize=TRUE)
   return(res)
 }
 

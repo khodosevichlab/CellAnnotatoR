@@ -8,16 +8,15 @@ License: What license is it under?
 Encoding: UTF-8
 LazyData: true
 Imports:
-    conos (>= 1.2.0),
+    cowplot,
     dplyr,
     ggplot2,
     igraph,
     Matrix,
-    tibble,
     magrittr,
-    cowplot,
     Rcpp,
-    sccore (>= 0.1)
+    sccore (>= 1.0.1),
+    tibble
 Suggests:
     ggtree (>= 1.99.1),
     knitr,
@@ -28,7 +27,7 @@ Remotes:
     hms-dbmi/conos,
     hms-dbmi/sccore,
     YuLab-SMU/ggtree
-RoxygenNote: 7.1.0
+RoxygenNote: 7.1.1
 VignetteBuilder: knitr
 LinkingTo:
     Rcpp

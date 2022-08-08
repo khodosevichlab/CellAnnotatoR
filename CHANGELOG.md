@@ -1,3 +1,13 @@
+## [Upcoming]
+
+### Fixed
+
+- Changed `conos` dependency to `sccore`
+
+### Added
+
+- New default smoothing based graph filtering (see `smoothing.method` parameter in `assignCellsByScores`)
+
 ## [0.2.2] - 2022-06-29
 
 ### Fixed

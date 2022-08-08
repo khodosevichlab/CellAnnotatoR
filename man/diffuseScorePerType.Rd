@@ -23,6 +23,9 @@ diffuseScorePerType(
     \item{\code{score.fixing.threshold}}{threshold for a label to be considered certain. Such labels can't be changed during diffusion.}
     \item{\code{verbose}}{print progress bar}
     \item{\code{tol}}{tolerance for diffusion stopping}
+    \item{\code{smoothing.method}}{method to use for signal smoothing: `heat.filter` corresponds to smooting using graph filters (see \link[sccore:smoothSignalOnGraph]{smoothSignalOnGraph}),
+while `knn` corresponds to kNN diffusion (see \link[sccore:smooth_count_matrix]{smooth_count_matrix}).}
+    \item{\code{beta}}{smoothing strength for `smoothing.method='heat.filter'`}
   }}
 }
 \description{
