@@ -1,6 +1,7 @@
 #' @useDynLib CellAnnotatoR, .registration = TRUE
 #' @importFrom Rcpp sourceCpp
 #' @importFrom magrittr %<>% %$% %>%
+#' @importFrom sccore plapply
 NULL
 
 ## Correct unloading of the library
@@ -47,7 +48,7 @@ diffuseScorePerType <- function(scores.per.type, graph, parents, cbs.per.type, v
   plapply(parents, function(p)
     diffuseGraph(igraph::induced_subgraph(graph, cbs.per.type[[p]]),
                  scores=scores.per.type[[p]], verbose=verbose, ...),
-    verbose=(verbose > 0), n.cores=n.cores)
+    progress=(verbose > 0), n.cores=n.cores, fail.on.error=TRUE)
 }
 
 #' Diffuse Graph
@@ -277,7 +278,7 @@ mergeScores <- function(score.name, score.infos, aggr.func=c) {
 #'
 #' @export
 mergeScoreInfos <- function(score.infos, verbose=FALSE) {
-  names(score.infos[[1]]) %>% setNames(., .) %>% plapply(mergeScores, score.infos, verbose=verbose)
+  names(score.infos[[1]]) %>% setNames(., .) %>% plapply(mergeScores, score.infos, progress=verbose)
 }
 
 mergeAnnotationInfos <- function(ann.infos) {

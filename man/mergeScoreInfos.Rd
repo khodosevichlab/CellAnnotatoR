@@ -8,8 +8,6 @@ mergeScoreInfos(score.infos, verbose = FALSE)
 }
 \arguments{
 \item{score.infos}{scoring info per cell per cell type}
-
-\item{verbose}{show progress bar}
 }
 \value{
 List of score info for each cell type. See `CellAnnotatoR:::getCellTypeScoreInfo` for more info

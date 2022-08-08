@@ -249,7 +249,7 @@ getNextMarkers <- function(cell.type, cm.norm, annotation, marker.list, markers.
   pos.score <- pos.score.changes.aggr %>% .[which.max(.$Score),]
   res.score <- plapply(top.pos.genes, getTopNegativeGenes, cell.type, cm.norm, annotation, markers.per.type$negative[[cell.type]], s.info,
                        pos.score.changes, n.neg.genes=n.neg.genes, score.change.threshold=score.change.threshold,
-                       verbose=verbose, n.cores=max(min(n.cores, n.pos.genes), 1)) %>%
+                       progress=verbose, n.cores=max(min(n.cores, n.pos.genes), 1)) %>%
     .[!sapply(., is.null)]
 
   if (length(res.score) > 0) {
@@ -304,7 +304,7 @@ filterMarkerListByScore <- function(marker.list, cm.norm, annotation, verbose=FA
     return(marker.list)
 
   mean.conf.per.type <- getMeanConfidencePerType(marker.list, cm.norm, annotation)
-  conf.per.ml <- plapply(mls.filt, getMeanConfidencePerType, cm.norm, annotation, verbose=verbose, n.cores=n.cores)
+  conf.per.ml <- plapply(mls.filt, getMeanConfidencePerType, cm.norm, annotation, progress=verbose, n.cores=n.cores)
 
   mean.score.per.ml <- sapply(conf.per.ml, mean)
   t.ids <- which((mean.score.per.ml >= mean(mean.conf.per.type)) & (sapply(conf.per.ml, min) >= min(mean.conf.per.type)))
@@ -454,7 +454,7 @@ prepareDeDf <- function(df, cell.type, annotation, cm.raw, low.expression.thresh
 #' @export
 prepareDeInfo <- function(de.info, annotation, cm.raw, ..., n.cores=1, verbose=FALSE) {
   res <- names(de.info) %>% setNames(., .) %>%
-    plapply(function(n) prepareDeDf(de.info[[n]], n, annotation, cm.raw, ...), n.cores=n.cores, verbose=verbose)
+    plapply(function(n) prepareDeDf(de.info[[n]], n, annotation, cm.raw, ...), n.cores=n.cores, progress=verbose)
   return(res)
 }
 

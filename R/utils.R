@@ -1,17 +1,3 @@
-#' Parallel Lapply
-#' @description parallel, optionally verbose lapply
-#' @param n.cores number of cores to use
-#' @param verbose show progress bar
-plapply <- function(..., n.cores=1, verbose=FALSE) {
-  if (verbose)
-    return(pbapply::pblapply(..., cl=n.cores))
-
-  if (n.cores == 1)
-    return(lapply(...))
-
-  return(parallel::mclapply(..., mc.cores=n.cores))
-}
-
 sparseColMax <- function(mtx) {
   max.vals <- rep(0, ncol(mtx))
   facs <- split(mtx@x, rep(1:(length(mtx@p)-1), diff(mtx@p)))
