@@ -3,8 +3,8 @@
 #' @param build.panel combine individual plots to a single panel
 #' @param n.col number of columns in the panel
 #' @param n.row number of rows in the panel
-#' @param title.size font size for title of individual plots. Used only if build.panel==T
-#' @return panel of plots if `build.panel==T` or `plot.list` otherwise
+#' @param title.size font size for title of individual plots. Used only if build.panel==TRUE
+#' @return panel of plots if `build.panel==TRUE` or `plot.list` otherwise
 arrangePlots <- function(plot.list, build.panel, n.col=NULL, n.row=NULL, title.size=10) {
   if (build.panel) {
     p.theme <- ggplot2::theme(plot.title=ggplot2::element_text(size=title.size, vjust=-1),
@@ -30,7 +30,7 @@ arrangePlots <- function(plot.list, build.panel, n.col=NULL, n.row=NULL, title.s
 #'   ann_by_level <- assignCellsByScores(graph, clf_data)
 #'   plotAssignmentScores(t_sne, ann_by_level$scores$l1, clf_data$classification.tree)
 #' @export
-plotAssignmentScores <- function(embedding, scores, classification.tree, parent.node="root", build.panel=T, n.col=NULL, n.row=NULL, title.size=12, ...) {
+plotAssignmentScores <- function(embedding, scores, classification.tree, parent.node="root", build.panel=TRUE, n.col=NULL, n.row=NULL, title.size=12, ...) {
   classificationTreeToDf(classification.tree) %>%
     dplyr::filter(Parent == parent.node) %>% .$Node %>%
     lapply(function(n) sccore::embeddingPlot(embedding, colors=setNames(scores[, n], rownames(scores)),
@@ -47,7 +47,7 @@ plotAssignmentScores <- function(embedding, scores, classification.tree, parent.
 #' @inheritParams arrangePlots
 #' @inheritDotParams sccore::embeddingPlot
 #' @export
-plotTypeMarkers <- function(embedding, count.matrix, cell.type, marker.list, show.legend=T, build.panel=T, n.col=NULL, n.row=NULL, title.size=10, ...) {
+plotTypeMarkers <- function(embedding, count.matrix, cell.type, marker.list, show.legend=TRUE, build.panel=TRUE, n.col=NULL, n.row=NULL, title.size=10, ...) {
   plot.func <- function(gene, title) {
     sccore::embeddingPlot(embedding, colors=count.matrix[,gene], show.legend=show.legend, title=title, ...)
   }
@@ -64,7 +64,7 @@ plotTypeMarkers <- function(embedding, count.matrix, cell.type, marker.list, sho
 #' Extract Markers From Subtypes
 #' @param parent.type cell type for which the markers of the subtypes must be plotted
 extractMarkersFromSubtypes <- function(parent.type="root", clf.data=NULL, clf.tree=NULL, marker.list=NULL, count.matrix=NULL,
-                                       max.depth=NULL, drop.missing=T, marker.type=c("expressed", "not_expressed")) {
+                                       max.depth=NULL, drop.missing=TRUE, marker.type=c("expressed", "not_expressed")) {
   if (length(setdiff(marker.type, c("expressed", "not_expressed"))) > 0)
     stop("Unknown marker.type")
 
@@ -115,23 +115,23 @@ extractMarkersFromSubtypes <- function(parent.type="root", clf.data=NULL, clf.tr
 #' @inheritDotParams sccore::embeddingPlot
 #' @export
 plotSubtypeMarkers <- function(embedding, count.matrix, parent.type="root", clf.data=NULL, clf.tree=NULL, marker.list=NULL,
-                               show.legend=F, max.depth=NULL, build.panel=T, n.col=NULL, n.row=NULL, marker.type=c("expressed", "not_expressed"),
+                               show.legend=FALSE, max.depth=NULL, build.panel=TRUE, n.col=NULL, n.row=NULL, marker.type=c("expressed", "not_expressed"),
                                title.size=10, ...) {
   markers <- extractMarkersFromSubtypes(parent.type=parent.type, clf.data=clf.data, clf.tree=clf.tree, marker.list=marker.list,
-                                        count.matrix=count.matrix, max.depth=max.depth, drop.missing=T, marker.type=marker.type)
+                                        count.matrix=count.matrix, max.depth=max.depth, drop.missing=TRUE, marker.type=marker.type)
 
   titles <- mapply(function(n,ts) paste0(n, ": ", ts), names(markers), lapply(markers, paste, collapse=", "))
   plots <- mapply(function(gene, title) {
     expr.vec <- if (gene %in% colnames(count.matrix)) count.matrix[,gene] else NA
     sccore::embeddingPlot(embedding, colors=expr.vec, show.legend=show.legend, title=title, ...)
-  },names(markers), titles, SIMPLIFY=F
+  },names(markers), titles, SIMPLIFY=FALSE
   )
 
   return(arrangePlots(plots, build.panel=build.panel, n.row=n.row, n.col=n.col, title.size=title.size))
 }
 
 #' @export
-plotAnnotationByLevels <- function(embedding, annotation.by.level, clusters=NULL, build.panel=T, n.col=NULL, n.row=NULL, title.size=12, ...) {
+plotAnnotationByLevels <- function(embedding, annotation.by.level, clusters=NULL, build.panel=TRUE, n.col=NULL, n.row=NULL, title.size=12, ...) {
   res <- lapply(1:length(annotation.by.level),
                 function(i) sccore::embeddingPlot(embedding, groups=annotation.by.level[[i]], title=paste("Level", i), ...))
 
@@ -142,7 +142,7 @@ plotAnnotationByLevels <- function(embedding, annotation.by.level, clusters=NULL
   return(arrangePlots(res, build.panel=build.panel, n.row=n.row, n.col=n.col, title.size=title.size))
 }
 
-plotConfidenceByLevels <- function(embedding, annotation.by.level, scores, show.legend=T, ...) {
+plotConfidenceByLevels <- function(embedding, annotation.by.level, scores, show.legend=TRUE, ...) {
   if (class(scores) == "data.frame") {
     scores <- lapply(annotation.by.level, function(x) scores)
   }
@@ -152,14 +152,14 @@ plotConfidenceByLevels <- function(embedding, annotation.by.level, scores, show.
 
   res <- lapply(1:length(conf.per.level), function(i)
     sccore::embeddingPlot(embedding, colors=conf.per.level[[i]], title=paste("Level", i),
-                          legend.title="Confidence", show.legend=T, color.range=c(0, 1), ...))
+                          legend.title="Confidence", show.legend=TRUE, color.range=c(0, 1), ...))
 
   return(res)
 }
 
 #' @export
 plotTypeHierarchy <- function(classification.tree, layout="slanted", xlims=NULL, font.size=3, ...) {
-  if (!requireNamespace("ggtree", quietly=T))
+  if (!requireNamespace("ggtree", quietly=TRUE))
     stop("You need to install package 'ggtree' to be able to plot hierarchical tree. ",
          "`Try devtools::install_github('YuLab-SMU/ggtree')`")
 
@@ -182,7 +182,7 @@ plotTypeHierarchy <- function(classification.tree, layout="slanted", xlims=NULL,
 #' @inheritDotParams sccore::embeddingPlot
 #' @export
 plotUncertaintyPerCell <- function(embedding, uncertainty.info, palette=colorRampPalette(c("gray", "#ffeda0", "#fec44f", "#f03b20")), alpha=0.3,
-                                   build.panel=T, n.col=length(uncertainty.info), n.row=NULL, title.size=12, ...) {
+                                   build.panel=TRUE, n.col=length(uncertainty.info), n.row=NULL, title.size=12, ...) {
   names(uncertainty.info) %>% setNames(., .) %>% lapply(function(n)
     sccore::embeddingPlot(embedding, colors=uncertainty.info[[n]], alpha=alpha, title=n, palette=palette, ...)) %>%
     arrangePlots(build.panel=build.panel, n.col=n.col, n.row=n.row, title.size=title.size)
@@ -208,7 +208,7 @@ plotOneUncertaintyPerClust <- function(uncertainty.per.clust, clusters, annotati
     ggplot2::theme(axis.text.x=ggplot2::element_text(angle=text.angle, hjust=1)) +
     ggplot2::geom_hline(ggplot2::aes(yintercept=threshold)) + ggplot2::ylim(0, 1)
 
-  gg %<>% sccore:::styleEmbeddingPlot(show.ticks=T, show.labels=T, ...)
+  gg %<>% sccore:::styleEmbeddingPlot(show.ticks=TRUE, show.labels=TRUE, ...)
 
   return(gg + ggplot2::labs(x="", y="Uncertainty"))
 }
@@ -218,8 +218,8 @@ plotOneUncertaintyPerClust <- function(uncertainty.per.clust, clusters, annotati
 #' @inheritDotParams plotOneUncertaintyPerClust text.angle
 #' @export
 plotUncertaintyPerClust <- function(uncertainty.per.clust, clusters, annotation=NULL, ann.per.clust=NULL,
-                                    thresholds=c(coverage=0.5, negative=0.5, positive=0.75), build.panel=T,
-                                    n.col=1, n.row=NULL, adjust.legend=T, rel.legend.width=0.25, title.size=12, ...) {
+                                    thresholds=c(coverage=0.5, negative=0.5, positive=0.75), build.panel=TRUE,
+                                    n.col=1, n.row=NULL, adjust.legend=TRUE, rel.legend.width=0.25, title.size=12, ...) {
   ggs <- names(uncertainty.per.clust) %>% setNames(., .) %>% lapply(function(n)
     plotOneUncertaintyPerClust(uncertainty.per.clust[[n]], annotation=annotation, clusters=clusters,
                                ann.per.clust=ann.per.clust, threshold=thresholds[[n]], title=n, ...))
@@ -227,7 +227,7 @@ plotUncertaintyPerClust <- function(uncertainty.per.clust, clusters, annotation=
   if (!build.panel || !adjust.legend || is.null(annotation))
     return(arrangePlots(ggs, build.panel=build.panel, n.col=n.col, n.row=n.row, title.size=title.size))
 
-  if (!requireNamespace("ggpubr", quietly=T))
+  if (!requireNamespace("ggpubr", quietly=TRUE))
     stop("You need to install package 'ggpubr' to be able to adjust legend")
 
   ggl <- ggpubr::get_legend(ggs[[1]])
@@ -248,9 +248,9 @@ plotAssignmentConfusion <- function(scores, annotation=NULL, clusters=annotation
 
   scores %>% dplyr::group_by(Cluster=clusters[rownames(.)]) %>%
     dplyr::summarise_all(dplyr::funs(mean)) %>%
-    data.frame(row.names=.$Cluster, check.names=F) %>% .[,2:ncol(.)] %>%
+    data.frame(row.names=.$Cluster, check.names=FALSE) %>% .[,2:ncol(.)] %>%
     .[names(sort(ann.per.clust)), sort(colnames(.))] %>%
-    pheatmap::pheatmap(cluster_rows=F, cluster_cols=F, annotation_row=data.frame(ann.per.clust))
+    pheatmap::pheatmap(cluster_rows=FALSE, cluster_cols=FALSE, annotation_row=data.frame(ann.per.clust))
 }
 
 #' Plot expression violin map for given marker list
@@ -260,7 +260,7 @@ plotAssignmentConfusion <- function(scores, annotation=NULL, clusters=annotation
 plotMarkerListViolinMap <- function(count.matrix, annotation, parent.type="root", clf.data=NULL, clf.tree=NULL, marker.list=NULL,
                                     max.depth=NULL, marker.type="expressed", text.angle=45, gene.order=NULL, ...) {
   extractMarkersFromSubtypes(parent.type=parent.type, clf.data=clf.data, clf.tree=clf.tree, marker.list=marker.list,
-                             count.matrix=count.matrix, max.depth=max.depth, drop.missing=T, marker.type=marker.type) %>%
+                             count.matrix=count.matrix, max.depth=max.depth, drop.missing=TRUE, marker.type=marker.type) %>%
     names() %>% plotExpressionViolinMap(count.matrix, annotation, text.angle=text.angle, gene.order=gene.order)
 }
 
@@ -298,7 +298,7 @@ plotExpressionViolinMap <- function(markers, count.matrix, annotation, text.angl
 #' @inheritParams arrangePlots
 #' @inheritDotParams sccore::embeddingPlot
 #' @export
-plotGeneExpression <- function(genes, embedding, cm, build.panel=T, n.col=NULL, n.row=NULL, title.size=12, ...) {
+plotGeneExpression <- function(genes, embedding, cm, build.panel=TRUE, n.col=NULL, n.row=NULL, title.size=12, ...) {
   res <- genes %>% setNames(., .) %>%
     lapply(function(g) sccore::embeddingPlot(embedding, colors=cm[, g], title=g, ...))
 

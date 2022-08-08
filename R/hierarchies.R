@@ -59,11 +59,11 @@ appendHierarchyBranch <- function(branch, parent.name) {
   branch %<>% simplifyHierarchy()
   is.leaf <- (sapply(branch, is.character) & (sapply(branch, length) == 1))
 
-  current.nodes <- c(unlist(branch[is.leaf], use.names=F), names(branch[!is.leaf])) %>%
+  current.nodes <- c(unlist(branch[is.leaf], use.names=FALSE), names(branch[!is.leaf])) %>%
     setNames(., .) %>% lapply(function(x) list(expressed=c(), not_expressed=c(), parent=parent.name))
 
   sub.branches <- names(branch)[!is.leaf] %>%
-    lapply(function(n) appendHierarchyBranch(branch[[n]], n)) %>% unlist(recursive=F)
+    lapply(function(n) appendHierarchyBranch(branch[[n]], n)) %>% unlist(recursive=FALSE)
   return(c(current.nodes, sub.branches))
 }
 

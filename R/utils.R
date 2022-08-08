@@ -2,7 +2,7 @@
 #' @description parallel, optionally verbose lapply
 #' @param n.cores number of cores to use
 #' @param verbose show progress bar
-plapply <- function(..., n.cores=1, verbose=F) {
+plapply <- function(..., n.cores=1, verbose=FALSE) {
   if (verbose)
     return(pbapply::pblapply(..., cl=n.cores))
 
@@ -61,7 +61,7 @@ classificationTreeToHierarhy <- function(clf.tree, max.depth=NULL) {
 }
 
 getAllSubtypes <- function(parent.type, classification.tree, max.depth=NULL) {
-  paths <- igraph::dfs(classification.tree, parent.type, neimode="out", unreachable=F, dist=T)
+  paths <- igraph::dfs(classification.tree, parent.type, neimode="out", unreachable=FALSE, dist=TRUE)
   paths <- if (!is.null(max.depth)) names(which(paths$dist <= max.depth)) else names(paths$order)
   return(paths %>% .[!is.na(.)] %>% .[. != parent.type])
 }

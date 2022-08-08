@@ -46,7 +46,7 @@ scorePerCellUncertainty <- function(annotation, scores.norm, score.info, cur.typ
 #'   unc_info <- scoreCellUncertaintyPerLevel(ann_by_level, score_info)
 #'
 #' @export
-scoreCellUncertaintyPerLevel <- function(ann.info.per.level, score.info, verbose=F, ...) {
+scoreCellUncertaintyPerLevel <- function(ann.info.per.level, score.info, verbose=FALSE, ...) {
   names(ann.info.per.level[[1]]) %>% setNames(., .) %>% plapply(function(n)
     scorePerCellUncertainty(ann.info.per.level$annotation[[n]], ann.info.per.level$scores[[n]], score.info, ...),
     verbose=verbose)

@@ -8,10 +8,10 @@ NULL
   library.dynam.unload("CellAnnotatoR", libpath)
 }
 
-expandAnnotationToClusters <- function(scores, clusters, quiet=F) {
+expandAnnotationToClusters <- function(scores, clusters, quiet=FALSE) {
   clusters <- clusters[rownames(scores)] %>% as.factor() %>% droplevels()
   ann.update <- split(1:length(clusters), clusters) %>%
-    sapply(function(cids) colSums(scores[cids, ,drop=F]) %>% which.max() %>% names()) %>%
+    sapply(function(cids) colSums(scores[cids, ,drop=FALSE]) %>% which.max() %>% names()) %>%
     .[clusters] %>% setNames(names(clusters))
 
   if (quiet || (length(unique(ann.update)) == ncol(scores)))
@@ -70,7 +70,7 @@ diffuseGraph <- function(graph, scores, fading=10, fading.const=0.5, score.fixin
   if (length(cbs) == 0)
     return(NULL)
 
-  scores <- as.matrix(scores[cbs,,drop=F])
+  scores <- as.matrix(scores[cbs,,drop=FALSE])
   scores[rowSums(scores) < 1e-5, ] <- 1
   scores %<>% `/`(rowSums(.))
 
@@ -131,7 +131,7 @@ assignCellsByScores <- function(graph, clf.data, score.info=NULL, clusters=NULL,
   scores <- getMarkerScoresPerCellType(clf.data, score.info=score.info)
   if (!is.null(graph)) {
     if ((is(graph, "Matrix") || is(graph, "matrix")) && ncol(graph) == nrow(graph)) {
-      graph <- igraph::graph_from_adjacency_matrix(graph, weighted=T)
+      graph <- igraph::graph_from_adjacency_matrix(graph, weighted=TRUE)
     } else if (!is(graph, "igraph")) {
       stop("Unknown graph format. Only adjacency matrix or igraph are supported")
     }
@@ -173,7 +173,7 @@ assignCellsByScores <- function(graph, clf.data, score.info=NULL, clusters=NULL,
 
     c.parents %<>% .[names(cbs.per.type)]
 
-    scores.per.type <- lapply(c.parents, function(p) scores[cbs.per.type[[p]], c.subtypes.per.parent[[p]], drop=F])
+    scores.per.type <- lapply(c.parents, function(p) scores[cbs.per.type[[p]], c.subtypes.per.parent[[p]], drop=FALSE])
 
     if (!is.null(graph)) {
       scores.per.type %<>% diffuseScorePerType(graph, c.parents, cbs.per.type, verbose=(verbose > 1), ...)
@@ -211,7 +211,7 @@ assignCellsByScores <- function(graph, clf.data, score.info=NULL, clusters=NULL,
 #' @inheritParams getClassificationData
 #'
 #' @export
-normalizeTCWithFeatures <- function(cm, max.quantile=0.95, max.smooth=1e-10, transpose=T) {
+normalizeTCWithFeatures <- function(cm, max.quantile=0.95, max.smooth=1e-10, transpose=TRUE) {
   cm %<>% as("dgCMatrix") %>% Matrix::drop0()
 
   # Total count normalization (i.e. TF-step)
@@ -238,7 +238,7 @@ normalizeTCWithFeatures <- function(cm, max.quantile=0.95, max.smooth=1e-10, tra
 #'
 #' @export
 normalizeTfIdfWithFeatures <- function(cm, ...) {
-  tf.idf <- normalizeTCWithFeatures(cm, transpose=F, ...)
+  tf.idf <- normalizeTCWithFeatures(cm, transpose=FALSE, ...)
   # IDF-factors: log(1 + fraction of expressing cells)
   idf.weights <- log(1 + nrow(tf.idf) / (Matrix::colSums(tf.idf > 0) + 1))
   tf.idf@x <- tf.idf@x * rep(idf.weights, diff(tf.idf@p))
@@ -273,10 +273,10 @@ mergeScores <- function(score.name, score.infos, aggr.func=c) {
 #' @examples
 #'   clf_datas <- lapply(cms, getClassificationData, marker_path)
 #'   score_infos <- lapply(clf_datas, getMarkerScoreInfo)
-#'   all_score_info <- mergeScoreInfos(score_infos, verbose=T)
+#'   all_score_info <- mergeScoreInfos(score_infos, verbose=TRUE)
 #'
 #' @export
-mergeScoreInfos <- function(score.infos, verbose=F) {
+mergeScoreInfos <- function(score.infos, verbose=FALSE) {
   names(score.infos[[1]]) %>% setNames(., .) %>% plapply(mergeScores, score.infos, verbose=verbose)
 }
 
@@ -300,7 +300,7 @@ mergeAnnotationInfos <- function(ann.infos) {
 #'   \item{max.positive: maximal expression of positive markers. Used for estimation of negative scores}
 #'   \item{scores: final scores. Equal to `scores * score.mult`}
 #' }
-getCellTypeScoreInfo <- function(markers, tf.idf, aggr=T) {
+getCellTypeScoreInfo <- function(markers, tf.idf, aggr=TRUE) {
   expressed.genes <- intersect(markers$expressed, colnames(tf.idf))
   if (length(expressed.genes) == 0) {
     if (aggr) {
@@ -311,7 +311,7 @@ getCellTypeScoreInfo <- function(markers, tf.idf, aggr=T) {
 
     max.positive.expr <- setNames(rep(0, nrow(tf.idf)), rownames(tf.idf))
   } else {
-    c.submat <- tf.idf[, expressed.genes, drop=F]
+    c.submat <- tf.idf[, expressed.genes, drop=FALSE]
     c.submat.t <- Matrix::t(c.submat)
     scores <- if (aggr) Matrix::colSums(c.submat.t) else c.submat
     max.positive.expr <- apply(c.submat.t, 2, max)
@@ -321,8 +321,8 @@ getCellTypeScoreInfo <- function(markers, tf.idf, aggr=T) {
   if (length(not.expressed.genes) == 0) {
     score.mult <- setNames(rep(1, nrow(tf.idf)), rownames(tf.idf))
   } else {
-    max.negative.expr <- apply(tf.idf[, not.expressed.genes, drop=F], 1, max)
-    # max.negative.expr <- sparseRowMax(tf.idf[, not.expressed.genes, drop=F])
+    max.negative.expr <- apply(tf.idf[, not.expressed.genes, drop=FALSE], 1, max)
+    # max.negative.expr <- sparseRowMax(tf.idf[, not.expressed.genes, drop=FALSE])
     score.mult <- pmax(max.positive.expr - max.negative.expr, 0) / max.positive.expr
     score.mult[is.na(score.mult)] <- 0
   }
@@ -347,17 +347,17 @@ normalizeScores <- function(scores, min.val=1e-10) {
 #'
 #' @return data.frame with rows corresponding to cells and columns corresponding to cell types.
 #'   Values are cell type scores, normalized per level of hierarchy
-getMarkerScoresPerCellType <- function(clf.data, score.info=NULL, aggr=T) {
+getMarkerScoresPerCellType <- function(clf.data, score.info=NULL, aggr=TRUE) {
   if (is.null(score.info)) {
     score.info <- getMarkerScoreInfo(clf.data, aggr=aggr)
   }
 
   scores <- lapply(score.info, `[[`, "scores")
   if (!aggr)
-    return(lapply(scores, as.matrix) %>% lapply(as.data.frame, optional=T))
+    return(lapply(scores, as.matrix) %>% lapply(as.data.frame, optional=TRUE))
 
   clf.nodes <- classificationTreeToDf(clf.data$classification.tree)
-  scores %<>% as.data.frame(optional=T)
+  scores %<>% as.data.frame(optional=TRUE)
 
   for (nodes in split(clf.nodes$Node, clf.nodes$PathLen)) {
     scores[, nodes]  %<>% normalizeScores()
