@@ -42,7 +42,7 @@ annotationFromScores <- function(scores, clusters=NULL) {
 }
 
 #' Diffuse Score per Type
-#' @inheritDotParams diffuseGraph fading fading.const verbose tol score.fixing.threshold smoothing.method beta
+#' @inheritDotParams diffuseGraph fading fading.const verbose tol score.fixing.threshold smoothing.method smooth.strength
 diffuseScorePerType <- function(scores.per.type, graph, parents, cbs.per.type, verbose, n.cores=1, ...) {
   plapply(parents, function(p)
     diffuseGraph(igraph::induced_subgraph(graph, cbs.per.type[[p]]),
@@ -61,10 +61,10 @@ diffuseScorePerType <- function(scores.per.type, graph, parents, cbs.per.type, v
 #' @param tol tolerance for diffusion stopping
 #' @param smoothing.method method to use for signal smoothing: `heat.filter` corresponds to smooting using graph filters (see \link[sccore:smoothSignalOnGraph]{smoothSignalOnGraph}),
 #'     while `knn` corresponds to kNN diffusion (see \link[sccore:smooth_count_matrix]{smooth_count_matrix}).
-#' @param beta smoothing strength for `smoothing.method='heat.filter'`
+#' @param smooth.strength smoothing strength (`beta`) for `smoothing.method='heat.filter'`
 diffuseGraph <- function(graph, scores, fading=10, fading.const=0.5, score.fixing.threshold=0.8,
                          verbose=FALSE, max.iters=1000, tol=1e-3, smoothing.method=c("heat.filter", "knn"),
-                         beta=30) {
+                         smooth.strength=30) {
   smoothing.method <- match.arg(smoothing.method)
   cbs <- igraph::V(graph)$name
   if (length(cbs) == 0)
@@ -90,7 +90,7 @@ diffuseGraph <- function(graph, scores, fading=10, fading.const=0.5, score.fixin
                                        tol=tol, normalize=TRUE)
   } else { # 'heat.filter'
     res <- scores %>% sccore::smoothSignalOnGraph(
-      filter=function(...) sccore::heatFilter(..., beta=beta), graph=graph, n.cores=1, progress=verbose
+      filter=function(...) sccore::heatFilter(..., beta=smooth.strength), graph=graph, n.cores=1, progress=verbose
     )
   }
 

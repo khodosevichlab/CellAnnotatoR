@@ -14,7 +14,7 @@ diffuseGraph(
   max.iters = 1000,
   tol = 0.001,
   smoothing.method = c("heat.filter", "knn"),
-  beta = 30
+  smooth.strength = 30
 )
 }
 \arguments{
@@ -35,7 +35,7 @@ diffuseGraph(
 \item{smoothing.method}{method to use for signal smoothing: `heat.filter` corresponds to smooting using graph filters (see \link[sccore:smoothSignalOnGraph]{smoothSignalOnGraph}),
 while `knn` corresponds to kNN diffusion (see \link[sccore:smooth_count_matrix]{smooth_count_matrix}).}
 
-\item{beta}{smoothing strength for `smoothing.method='heat.filter'`}
+\item{smooth.strength}{smoothing strength (`beta`) for `smoothing.method='heat.filter'`}
 }
 \description{
 Run diffusion on graph

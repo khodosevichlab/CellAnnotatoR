@@ -4,7 +4,7 @@
 \alias{markerListToMarkup}
 \title{Marker List to Markup}
 \usage{
-markerListToMarkup(marker.list, file = "", group.by.parent = T)
+markerListToMarkup(marker.list, file = "", group.by.parent = TRUE)
 }
 \arguments{
 \item{marker.list}{list of markers per cell type. Can be obtained with `parseMarkerFile`}

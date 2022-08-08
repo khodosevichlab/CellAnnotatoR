@@ -9,7 +9,7 @@ plotUncertaintyPerCell(
   uncertainty.info,
   palette = colorRampPalette(c("gray", "#ffeda0", "#fec44f", "#f03b20")),
   alpha = 0.3,
-  build.panel = T,
+  build.panel = TRUE,
   n.col = length(uncertainty.info),
   n.row = NULL,
   title.size = 12,

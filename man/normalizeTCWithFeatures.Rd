@@ -8,11 +8,11 @@ normalizeTCWithFeatures(
   cm,
   max.quantile = 0.95,
   max.smooth = 1e-10,
-  transpose = T
+  transpose = TRUE
 )
 }
 \arguments{
-\item{cm}{gene count matrix with cells by columns and genes by rows. May be in raw, TC-normalized or tf-idf-normalized format (in case of tf-idf, `prenormalized` must be set to `T`)}
+\item{cm}{gene count matrix with cells by columns and genes by rows. May be in raw, TC-normalized or tf-idf-normalized format (in case of tf-idf, `prenormalized` must be set to `TRUE`)}
 
 \item{max.quantile}{quantile to be used for max estimation during scaling}
 }

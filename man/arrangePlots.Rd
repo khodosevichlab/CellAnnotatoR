@@ -21,10 +21,10 @@ arrangePlots(
 
 \item{n.row}{number of rows in the panel}
 
-\item{title.size}{font size for title of individual plots. Used only if build.panel==T}
+\item{title.size}{font size for title of individual plots. Used only if build.panel==TRUE}
 }
 \value{
-panel of plots if `build.panel==T` or `plot.list` otherwise
+panel of plots if `build.panel==TRUE` or `plot.list` otherwise
 }
 \description{
 Arrange Plots

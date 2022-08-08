@@ -4,7 +4,7 @@
 \alias{prepareDeInfo}
 \title{Prepare DE Info}
 \usage{
-prepareDeInfo(de.info, annotation, cm.raw, ..., n.cores = 1, verbose = F)
+prepareDeInfo(de.info, annotation, cm.raw, ..., n.cores = 1, verbose = FALSE)
 }
 \arguments{
 \item{de.info}{list of data.frames with DE genes per cell type}

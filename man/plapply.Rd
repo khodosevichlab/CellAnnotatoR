@@ -4,7 +4,7 @@
 \alias{plapply}
 \title{Parallel Lapply}
 \usage{
-plapply(..., n.cores = 1, verbose = F)
+plapply(..., n.cores = 1, verbose = FALSE)
 }
 \arguments{
 \item{n.cores}{number of cores to use}

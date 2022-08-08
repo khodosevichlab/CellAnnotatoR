@@ -11,7 +11,7 @@ extractMarkersFromSubtypes(
   marker.list = NULL,
   count.matrix = NULL,
   max.depth = NULL,
-  drop.missing = T,
+  drop.missing = TRUE,
   marker.type = c("expressed", "not_expressed")
 )
 }

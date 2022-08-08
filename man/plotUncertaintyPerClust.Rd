@@ -10,10 +10,10 @@ plotUncertaintyPerClust(
   annotation = NULL,
   ann.per.clust = NULL,
   thresholds = c(coverage = 0.5, negative = 0.5, positive = 0.75),
-  build.panel = T,
+  build.panel = TRUE,
   n.col = 1,
   n.row = NULL,
-  adjust.legend = T,
+  adjust.legend = TRUE,
   rel.legend.width = 0.25,
   title.size = 12,
   ...

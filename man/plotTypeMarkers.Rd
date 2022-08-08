@@ -9,8 +9,8 @@ plotTypeMarkers(
   count.matrix,
   cell.type,
   marker.list,
-  show.legend = T,
-  build.panel = T,
+  show.legend = TRUE,
+  build.panel = TRUE,
   n.col = NULL,
   n.row = NULL,
   title.size = 10,
@@ -34,7 +34,7 @@ plotTypeMarkers(
 
 \item{n.row}{number of rows in the panel}
 
-\item{title.size}{font size for title of individual plots. Used only if build.panel==T}
+\item{title.size}{font size for title of individual plots. Used only if build.panel==TRUE}
 
 \item{...}{
   Arguments passed on to \code{\link[sccore:embeddingPlot]{sccore::embeddingPlot}}

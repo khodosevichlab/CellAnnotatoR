@@ -18,7 +18,7 @@ selectMarkersPerType(
   log.step = 1,
   n.cores = 1,
   refinement.period = 10,
-  return.all = F
+  return.all = FALSE
 )
 }
 \arguments{

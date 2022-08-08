@@ -4,7 +4,7 @@
 \alias{getMarkerScoresPerCellType}
 \title{Return initial scores of each cell type for each cell}
 \usage{
-getMarkerScoresPerCellType(clf.data, score.info = NULL, aggr = T)
+getMarkerScoresPerCellType(clf.data, score.info = NULL, aggr = TRUE)
 }
 \arguments{
 \item{clf.data}{classification data from `getClassificationData`}

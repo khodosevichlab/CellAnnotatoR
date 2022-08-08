@@ -4,7 +4,7 @@
 \alias{mergeScoreInfos}
 \title{Merge Score Infos}
 \usage{
-mergeScoreInfos(score.infos, verbose = F)
+mergeScoreInfos(score.infos, verbose = FALSE)
 }
 \arguments{
 \item{score.infos}{scoring info per cell per cell type}
@@ -20,6 +20,6 @@ merge score information from multiple datasets
 \examples{
   clf_datas <- lapply(cms, getClassificationData, marker_path)
   score_infos <- lapply(clf_datas, getMarkerScoreInfo)
-  all_score_info <- mergeScoreInfos(score_infos, verbose=T)
+  all_score_info <- mergeScoreInfos(score_infos, verbose=TRUE)
 
 }

@@ -4,7 +4,12 @@
 \alias{scoreCellUncertaintyPerLevel}
 \title{Score Cell Uncertainty Per Level}
 \usage{
-scoreCellUncertaintyPerLevel(ann.info.per.level, score.info, verbose = F, ...)
+scoreCellUncertaintyPerLevel(
+  ann.info.per.level,
+  score.info,
+  verbose = FALSE,
+  ...
+)
 }
 \arguments{
 \item{ann.info.per.level}{annotation info per level. Result of `assignCellsByScores`.}

@@ -10,11 +10,11 @@ aggregateScoreChangePerGene(
   marker.type,
   cell.type,
   target.type = NULL,
-  balance.cell.types = T,
+  balance.cell.types = TRUE,
   self.mult = 1
 )
 }
 \description{
-Aggregates score chage over all type. Either average (`balance.cell.types=T`)
-or sum (`balance.cell.types=F`) it per cell type and returns sum of signed scores
+Aggregates score chage over all type. Either average (`balance.cell.types=TRUE`)
+or sum (`balance.cell.types=FALSE`) it per cell type and returns sum of signed scores
 }

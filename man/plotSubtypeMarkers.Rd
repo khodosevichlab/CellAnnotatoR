@@ -11,9 +11,9 @@ plotSubtypeMarkers(
   clf.data = NULL,
   clf.tree = NULL,
   marker.list = NULL,
-  show.legend = F,
+  show.legend = FALSE,
   max.depth = NULL,
-  build.panel = T,
+  build.panel = TRUE,
   n.col = NULL,
   n.row = NULL,
   marker.type = c("expressed", "not_expressed"),
@@ -38,7 +38,7 @@ plotSubtypeMarkers(
 
 \item{n.row}{number of rows in the panel}
 
-\item{title.size}{font size for title of individual plots. Used only if build.panel==T}
+\item{title.size}{font size for title of individual plots. Used only if build.panel==TRUE}
 
 \item{...}{
   Arguments passed on to \code{\link[sccore:embeddingPlot]{sccore::embeddingPlot}}

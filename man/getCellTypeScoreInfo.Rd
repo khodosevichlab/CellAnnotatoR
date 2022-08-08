@@ -4,7 +4,7 @@
 \alias{getCellTypeScoreInfo}
 \title{Get Cell Type Score Info}
 \usage{
-getCellTypeScoreInfo(markers, tf.idf, aggr = T)
+getCellTypeScoreInfo(markers, tf.idf, aggr = TRUE)
 }
 \arguments{
 \item{markers}{element of marker list. List with fields `expressed` and `not_expressed`}
